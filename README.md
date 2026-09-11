@@ -6,7 +6,8 @@ submits an order, never holds capital, never talks to a live venue.**
 
 > Built 2026-09-11 per the recorded decision in
 > [`docs/decision-record-2026-09-11.md`](docs/decision-record-2026-09-11.md);
-> v0.3.0 per [`docs/decision-record-v0.3.0.md`](docs/decision-record-v0.3.0.md).
+> v0.3.0 per [`docs/decision-record-v0.3.0.md`](docs/decision-record-v0.3.0.md);
+> v0.4.0 per [`docs/decision-record-v0.4.0.md`](docs/decision-record-v0.4.0.md).
 > The measured system ([funding-arb](https://github.com/markec12345678/funding-arb)
 > @ `0373f5d`) stays untouched and keeps collecting Phase-2 A/B/C evidence:
 > **the old system measures reality; this engine explores the next generation.**
@@ -33,7 +34,7 @@ every module here:
 ## Architecture
 
 ```
-                    QUANT ARB ENGINE  (v0.3 — two families + ranking)
+                    QUANT ARB ENGINE  (v0.4 — trend-aware σ_H)
                            │
              ┌─────────────┼─────────────┐
              ↓             ↓             ↓
@@ -70,7 +71,7 @@ Module map:
 | `quant_arb/pipeline.py` | Research run loop: feed → **both families → ranking** → edge → risk → journal; `family_eval` + `funding_daily` journaling; summary with unit discipline |
 | `quant_arb/research/stats.py` | Pure-stdlib distribution helpers (mean, sample std, numpy-style linear percentiles) for sweep summaries — machinery diagnostics, never market evidence |
 | `scripts/research_run.py` | CLI entry point (single run) |
-| `scripts/research_sweep.py` | Multi-seed sweep CLI (v0.3); overwrites the stable `run-latest.json` / `sweep-latest.json` derived summaries for the tower |
+| `scripts/research_sweep.py` | Multi-seed sweep CLI (v0.4: 60 seeds = screening 1..40 + holdout 41..60); overwrites the stable `run-latest.json` / `sweep-latest.json` derived summaries for the tower |
 
 ## Run the research demo (zero network, zero capital)
 
@@ -132,14 +133,66 @@ New machinery:
 Interpretation RULE (unchanged): machinery diagnostics on a synthetic world.
 They validate code paths, never market edges.
 
-## Research layer (v0.2 → v0.3)
+## v0.4 — Trend-aware horizon σ, round 2 (decision record)
+
+v0.3.0's honest residual — **35.0 % horizon breach vs 4.55 % nominal** — drove
+v0.4.0 (full reasoning, disclosed candidate screening and the STOP RULE in
+[`docs/decision-record-v0.4.0.md`](docs/decision-record-v0.4.0.md), written
+**before** any v0.4 run):
+
+1. **Disclosed screening on the frozen v0.3 journals** (the script ships in
+   `research/exploration/`): the textbook fix — HAC / Newey–West — measured
+   **73.2 % breach**, WORSE than doing nothing: it targets the variance of a
+   *stationary* mean, the wrong estimand when the funding level drifts. A
+   local-level two-scale estimator measured 49.6 %. Both REJECTED, with the
+   numbers.
+2. **The chosen estimator**: `horizon_sigma_trend_apr` —
+   σ_H = √(σ_A² + (|β̂|·H/2)²) where σ_A is the v0.3 value (kept verbatim as
+   the audit component) and β̂ the OLS slope of daily printed APRs over the
+   last 60 days (measured insensitive 30–90). Meaning: dispersion risk +
+   trend-continuation exposure. One σ, one meaning — the z_perp gate, the
+   carry buffer and the journal all carry the same number.
+3. **Holdout confirmation design**: seeds 1..40 = the screening set
+   (disclosed in-sample); seeds 41..60 = holdout, never used in any decision;
+   panels reported pooled AND split.
+
+60-seed results (SYNTHETIC diagnostics, machinery validation only):
+
+- **P1 SUPPORTED**: trend-panel breach **11.0 %** pooled (from 35.0 %);
+- **P2 SUPPORTED**: holdout 12.1 % vs screening set 10.4 % (Δ +1.7 pp) — the
+  estimator generalizes across seeds, it is not a screening artifact;
+- **entry-history decomposition** (the residual made measurable): breaches at
+  entries with ≤ 45 observed days **15.0 %** vs **0.8 %** with > 45 days —
+  the remaining miscalibration is early-history uncertainty (a regime too
+  young to be visible), while with enough history the trend-aware σ is now
+  slightly conservative (0.8 % < 4.55 % nominal);
+- **P3 REFUTED**: perp gated-in share 83.4 % (predicted ≤ 75 %) — the honest σ
+  makes the persistence gate bind (99.4 % → 83.4 %) but less than predicted;
+- **P4 REFUTED — the round's headline finding**: ranking hit-rate
+  **11.4 %** on the screening set (v0.3: 60.2 %). The two-sided trend term in
+  the carry buffer deflates the floating family's net executable edge, the
+  ranking flips to the locked forward on ~94 % of selected days, and the
+  ex-post scorecard (all full-window contests are ramp-phase in this world)
+  says that was the wrong call: the realized carry kept beating the stale desk
+  premium. **Honest uncertainty pricing has a measured price.** The stop rule
+  forbids patching this inside v0.4; the asymmetric question — should a carry
+  buffer price DOWNSIDE semi-deviation rather than two-sided σ, since drift
+  is upside for a long-carry position — is the pre-registration question for
+  v0.5, recorded here as a finding, not fixed silently.
+- **P5 SUPPORTED**: forward share of contested selections in the collapse
+  phase 95.8 % (v0.3: 79.5 %) — phase behaviour preserved and sharpened.
+
+Interpretation RULE (unchanged): machinery diagnostics on a synthetic world.
+They validate code paths, never market edges.
+
+## Research layer (v0.2 → v0.4)
 
 Multi-seed sweep on top of the single-run pipeline — the machinery-validation
 layer:
 
 ```bash
-python3 scripts/research_sweep.py                     # 40 seeds (1..40), 200 days each
-python3 scripts/research_sweep.py --seeds 10 --days 120 --tenor 60
+python3 scripts/research_sweep.py                     # 60 seeds (screening 1..40 + holdout 41..60)
+python3 scripts/research_sweep.py --seeds 10 --days 120 --tenor 60   # quick subset
 ```
 
 Runs the full pipeline per seed (one invariant-enforced journal per seed under
@@ -152,8 +205,10 @@ Runs the full pipeline per seed (one invariant-enforced journal per seed under
   (daily printed APR) and the **per-day family edge series** (net edge of
   both families + who was selected).
 - `research/artifacts/sweep-latest.json` — cross-seed aggregates: totals,
-  family census, **ranking hit-rate**, **dual z-gate calibration panels**, reject-reason
-  census, pooled settled stats, **scored predictions P1/P2/P3**, per-seed rows.
+  family census, **ranking hit-rate**, **triple z-gate calibration panels**
+  (level / iid / trend + holdout split + entry-history decomposition), the
+  disclosed estimator screening block, reject-reason census, pooled settled
+  stats, **scored predictions P1..P5**, per-seed rows.
 
 The two `-latest.json` files are **derived summaries** (plain JSON, not
 journal-managed); the append-only invariant-enforced journals remain the source

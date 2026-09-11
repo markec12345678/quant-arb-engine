@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-11T17:41:12Z",
-  "engine_version": "0.3.0",
+  "generated_at": "2026-09-11T18:19:08Z",
+  "engine_version": "0.4.0",
   "params": {
     "seeds": [
       1,
@@ -42,7 +42,91 @@
       37,
       38,
       39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60
+    ],
+    "screening_set_seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
       40
+    ],
+    "holdout_seeds": [
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60
     ],
     "days": 200,
     "tenor_days": 90,
@@ -50,118 +134,119 @@
     "quote_every_days": 5,
     "warmup_days": 15,
     "ewma_half_life_h": 240.0,
-    "world": "v2 (ramp 8\u219218% d30\u2013120, flat\u2192150, collapse 18\u21924% d150\u2013180, flat 4%)"
+    "world": "v2 (ramp 8\u219218% d30\u2013120, flat\u2192150, collapse 18\u21924% d150\u2013180, flat 4%)",
+    "sigma_horizon_method": "trend-aware (iid-block dispersion + |beta_hat|\u00b7H/2, trend_window_days=60) \u2014 decision record v0.4.0 C1"
   },
   "totals": {
-    "quotes": 6080,
-    "quote_events": 1520,
-    "family_evals": 3040,
-    "contested_days": 1511,
-    "selected_days": 1520,
-    "risk_rejects": 1040,
-    "opened": 480,
-    "settled": 280,
-    "still_open": 200
+    "quotes": 9120,
+    "quote_events": 2280,
+    "family_evals": 4560,
+    "contested_days": 1902,
+    "selected_days": 2280,
+    "risk_rejects": 1560,
+    "opened": 720,
+    "settled": 420,
+    "still_open": 300
   },
   "selection_rate_pct": 100.0,
-  "contested_share_of_selected_days_pct": 99.4,
+  "contested_share_of_selected_days_pct": 83.4,
   "reject_reasons": [
     {
       "reason": "open positions 5 >= cap 5 (desk concentration)",
-      "count": 1040
+      "count": 1560
     }
   ],
   "family_census": {
     "forward_basis_v1": {
-      "evals": 1520,
-      "gated_in": 1520,
-      "selected": 662,
-      "opened": 182,
-      "settled": 182,
+      "evals": 2280,
+      "gated_in": 2280,
+      "selected": 2140,
+      "opened": 408,
+      "settled": 408,
       "settled_stats": {
-        "n": 182,
+        "n": 408,
         "pnl_pct_of_notional": {
-          "mean": 2.0322,
-          "std": 0.288,
-          "p5": 1.6217,
-          "p50": 2.0208,
-          "p95": 2.4667,
+          "mean": 2.2147,
+          "std": 0.4128,
+          "p5": 1.6399,
+          "p50": 2.1158,
+          "p95": 2.9247,
           "min": 1.0572,
-          "max": 3.0434
+          "max": 3.2422
         },
         "realized_minus_locked_bps": {
-          "mean": -3.1169,
-          "std": 0.8417,
-          "p5": -5.0118,
-          "p50": -2.9324,
-          "p95": -1.904,
+          "mean": -3.0781,
+          "std": 0.7671,
+          "p5": -4.5041,
+          "p50": -2.9402,
+          "p95": -2.0473,
           "min": -5.7062,
           "max": -1.496
         }
       }
     },
     "perp_carry_v1": {
-      "evals": 1520,
-      "gated_in": 1511,
-      "selected": 858,
-      "opened": 98,
-      "settled": 98,
+      "evals": 2280,
+      "gated_in": 1902,
+      "selected": 140,
+      "opened": 12,
+      "settled": 12,
       "settled_stats": {
-        "n": 98,
+        "n": 12,
         "pnl_pct_of_notional": {
-          "mean": 3.3201,
-          "std": 0.2915,
-          "p5": 2.7227,
-          "p50": 3.392,
-          "p95": 3.6553,
-          "min": 2.6121,
-          "max": 3.7407
+          "mean": 3.1462,
+          "std": 0.3504,
+          "p5": 2.7096,
+          "p50": 3.0518,
+          "p95": 3.5976,
+          "min": 2.6143,
+          "max": 3.6847
         },
         "realized_minus_expected_bps": {
-          "mean": 36.9242,
-          "std": 35.3371,
-          "p5": -6.2061,
-          "p50": 35.6198,
-          "p95": 94.9693,
-          "min": -50.3062,
-          "max": 133.2758
+          "mean": 67.3691,
+          "std": 30.107,
+          "p5": 21.1364,
+          "p50": 70.4094,
+          "p95": 104.3475,
+          "min": -1.1642,
+          "max": 105.465
         },
         "funding_accrual_bps": {
-          "mean": 338.0335,
-          "std": 29.0632,
-          "p5": 277.9773,
-          "p50": 345.9504,
-          "p95": 371.4849,
+          "mean": 320.6336,
+          "std": 34.903,
+          "p5": 276.8347,
+          "p50": 311.7647,
+          "p95": 365.3268,
           "min": 267.1424,
-          "max": 379.6419
+          "max": 374.3976
         }
       }
     }
   },
   "ranking": {
-    "contested_days_total": 1511,
-    "contested_days_evaluated": 791,
-    "truncated_excluded": 720,
-    "hits": 476,
-    "misses": 315,
+    "contested_days_total": 1902,
+    "contested_days_evaluated": 1030,
+    "truncated_excluded": 872,
+    "hits": 120,
+    "misses": 910,
     "ties": 0,
-    "hit_rate_pct": 60.2,
-    "forward_selection_share_ramp_pct": 30.2,
-    "forward_selection_share_collapse_pct": 79.5,
-    "contests_ramp_phase": 1111,
-    "contests_collapse_phase": 400,
+    "hit_rate_pct": 11.7,
+    "forward_selection_share_ramp_pct": 91.8,
+    "forward_selection_share_collapse_pct": 95.7,
+    "contests_ramp_phase": 1506,
+    "contests_collapse_phase": 396,
     "definition": "contested day = both families gated in; hit-rate needs a full tenor window (ex-post carries: forward = desk-implied APR at entry (locked), perp = mean printed daily APR over the window; hit = the selected family's ex-post carry beat the forgone family's); phase shares are selection-based over ALL contested days (no window requirement) \u2014 windows cannot cover the collapse phase (tenor exceeds the run tail)"
   },
   "settled_stats": {
-    "n": 280,
+    "n": 420,
     "pnl_pct_of_notional": {
-      "mean": 2.483,
-      "std": 0.6797,
-      "p5": 1.639,
-      "p50": 2.2081,
-      "p95": 3.5885,
+      "mean": 2.2413,
+      "std": 0.4392,
+      "p5": 1.6403,
+      "p50": 2.1349,
+      "p95": 2.9549,
       "min": 1.0572,
-      "max": 3.7407
+      "max": 3.6847
     }
   },
   "z_gate_calibration": {
@@ -169,35 +254,201 @@
     "nominal_two_sided_pct": 4.55,
     "panel_level": {
       "sigma": "level",
-      "n_checks": 280,
-      "n_breaches": 188,
-      "empirical_breach_pct": 67.1
+      "n_checks": 420,
+      "n_breaches": 287,
+      "empirical_breach_pct": 68.3,
+      "entry_history": {
+        "short_history_le_45d": {
+          "n_checks": 300,
+          "n_breaches": 239,
+          "empirical_breach_pct": 79.7
+        },
+        "long_history_gt_45d": {
+          "n_checks": 120,
+          "n_breaches": 48,
+          "empirical_breach_pct": 40.0
+        }
+      }
+    },
+    "panel_horizon_iid": {
+      "sigma": "horizon_iid",
+      "n_checks": 420,
+      "n_breaches": 149,
+      "empirical_breach_pct": 35.5,
+      "entry_history": {
+        "short_history_le_45d": {
+          "n_checks": 300,
+          "n_breaches": 133,
+          "empirical_breach_pct": 44.3
+        },
+        "long_history_gt_45d": {
+          "n_checks": 120,
+          "n_breaches": 16,
+          "empirical_breach_pct": 13.3
+        }
+      }
     },
     "panel_horizon": {
-      "sigma": "horizon",
-      "n_checks": 280,
-      "n_breaches": 98,
-      "empirical_breach_pct": 35.0
+      "sigma": "horizon_trend",
+      "n_checks": 420,
+      "n_breaches": 46,
+      "empirical_breach_pct": 11.0,
+      "entry_history": {
+        "short_history_le_45d": {
+          "n_checks": 300,
+          "n_breaches": 45,
+          "empirical_breach_pct": 15.0
+        },
+        "long_history_gt_45d": {
+          "n_checks": 120,
+          "n_breaches": 1,
+          "empirical_breach_pct": 0.8
+        }
+      }
     },
-    "definition": "share of settled entries (full funding_daily window) where |window-mean APR \u2212 ex-ante APR| > z\u00b7\u03c3; \u03c3_level = instantaneous estimator standard error (the v0.2.0 finding, kept for audit), \u03c3_H = overlapping-window horizon dispersion (the redefined diagnostic, decision record C2)"
+    "holdout_split": {
+      "holdout_seeds": "41..60",
+      "screening_set_seeds": "1..40",
+      "screening_set_panel_horizon": {
+        "sigma": "horizon_trend",
+        "n_checks": 280,
+        "n_breaches": 29,
+        "empirical_breach_pct": 10.4,
+        "entry_history": {
+          "short_history_le_45d": {
+            "n_checks": 200,
+            "n_breaches": 28,
+            "empirical_breach_pct": 14.0
+          },
+          "long_history_gt_45d": {
+            "n_checks": 80,
+            "n_breaches": 1,
+            "empirical_breach_pct": 1.2
+          }
+        }
+      },
+      "holdout_panel_horizon": {
+        "sigma": "horizon_trend",
+        "n_checks": 140,
+        "n_breaches": 17,
+        "empirical_breach_pct": 12.1,
+        "entry_history": {
+          "short_history_le_45d": {
+            "n_checks": 100,
+            "n_breaches": 17,
+            "empirical_breach_pct": 17.0
+          },
+          "long_history_gt_45d": {
+            "n_checks": 40,
+            "n_breaches": 0,
+            "empirical_breach_pct": 0.0
+          }
+        }
+      },
+      "screening_set_panel_horizon_iid": {
+        "sigma": "horizon_iid",
+        "n_checks": 280,
+        "n_breaches": 98,
+        "empirical_breach_pct": 35.0,
+        "entry_history": {
+          "short_history_le_45d": {
+            "n_checks": 200,
+            "n_breaches": 88,
+            "empirical_breach_pct": 44.0
+          },
+          "long_history_gt_45d": {
+            "n_checks": 80,
+            "n_breaches": 10,
+            "empirical_breach_pct": 12.5
+          }
+        }
+      },
+      "holdout_panel_horizon_iid": {
+        "sigma": "horizon_iid",
+        "n_checks": 140,
+        "n_breaches": 51,
+        "empirical_breach_pct": 36.4,
+        "entry_history": {
+          "short_history_le_45d": {
+            "n_checks": 100,
+            "n_breaches": 45,
+            "empirical_breach_pct": 45.0
+          },
+          "long_history_gt_45d": {
+            "n_checks": 40,
+            "n_breaches": 6,
+            "empirical_breach_pct": 15.0
+          }
+        }
+      },
+      "definition": "screening set = the seeds the estimator candidates were screened on (disclosed in-sample); holdout = never used in any decision before this sweep"
+    },
+    "estimator_screening": {
+      "source": "frozen v0.3 journals @ e250695 \u2014 research/exploration/screen_sigma_v04.py",
+      "disclosure": "in-sample candidate screening, performed BEFORE the v0.4 decision record was sealed",
+      "candidates": [
+        {
+          "id": "A_iid_block",
+          "estimand": "overlapping-window mean dispersion, sqrt(H/L) extrapolated (v0.3 gate)",
+          "breach_pct": 35.0,
+          "mean_sigma_pp": 1.74,
+          "verdict": "baseline \u2014 kept as the audit value"
+        },
+        {
+          "id": "B_hac",
+          "estimand": "Newey-West Bartlett long-run variance, sqrt(LRV/H)",
+          "breach_pct": 73.2,
+          "mean_sigma_pp": 0.53,
+          "verdict": "REJECTED \u2014 stationary-mean estimand, wrong for a drifting level"
+        },
+        {
+          "id": "C_local_level",
+          "estimand": "two-scale window-mean increment decomposition",
+          "breach_pct": 49.6,
+          "mean_sigma_pp": 1.9,
+          "verdict": "REJECTED \u2014 increments understate a near-deterministic trend"
+        },
+        {
+          "id": "F_trend",
+          "estimand": "A + |beta_hat|\u00b7H/2 trend-continuation term (decision record C1)",
+          "breach_pct": 10.4,
+          "mean_sigma_pp": 5.0,
+          "verdict": "CHOSEN"
+        }
+      ],
+      "residual_note": "29/29 residual breaches positive-direction (EWMA lags the ramp); 28/29 at entries on days 20-40 where the visible ramp is too short for any backward-looking slope measurement"
+    },
+    "definition": "share of settled entries (full funding_daily window) where |window-mean APR \u2212 ex-ante APR| > z\u00b7\u03c3; \u03c3_level = instantaneous estimator standard error (the v0.2.0 finding, kept for audit), \u03c3_H(iid) = overlapping-window horizon dispersion (the v0.3.0 finding, kept for audit), \u03c3_H(trend) = trend-aware horizon \u03c3 \u2014 dispersion + |\u03b2\u0302|\u00b7H/2 trend-continuation exposure (the v0.4.0 redefined diagnostic, decision record v0.4.0 C1)"
   },
   "predictions": {
     "P1": {
-      "statement": "horizon-panel breach rate drops far below the level-panel reading; rejected if it stays above 50%",
-      "level_breach_pct": 67.1,
-      "horizon_breach_pct": 35.0,
+      "statement": "pooled trend-panel breach \u2264 15% (v0.3: 35.0%; disclosed screening: 10.4%)",
+      "pooled_trend_breach_pct": 11.0,
       "verdict": "SUPPORTED"
     },
     "P2": {
-      "statement": "ranking selects the perp family predominantly during the carry build-up and the forward family after the collapse begins (measured on SELECTION over all contested days, by phase)",
-      "forward_share_ramp_pct": 30.2,
-      "forward_share_collapse_pct": 79.5,
+      "statement": "holdout (41..60) trend-panel breach within \u00b16 pp of the screening-set (1..40) breach",
+      "screening_set_breach_pct": 10.4,
+      "holdout_breach_pct": 12.1,
+      "delta_pp": 1.7,
       "verdict": "SUPPORTED"
     },
     "P3": {
-      "statement": "contested days (both families gated in) are a minority of quote days",
-      "contested_share_of_selected_days_pct": 99.4,
+      "statement": "perp gated-in share of family evals \u2264 75% (v0.3: 99.4%) \u2014 the honest \u03c3 makes the persistence gate materially binding",
+      "perp_gated_in_share_pct": 83.4,
       "verdict": "REFUTED"
+    },
+    "P4": {
+      "statement": "ranking hit-rate within \u00b15 pp of 60.2% (screening set \u2014 the like-for-like v0.3 seed set)",
+      "hit_rate_pct": 11.4,
+      "v0_3_baseline_pct": 60.2,
+      "delta_pp": -48.8,
+      "verdict": "REFUTED"
+    },
+    "P5": {
+      "statement": "forward share of contested selections in the collapse phase \u2265 70% (v0.3: 79.5%; screening set)",
+      "forward_share_collapse_pct": 95.8,
+      "verdict": "SUPPORTED"
     }
   },
   "per_seed": [
@@ -205,161 +456,161 @@
       "seed": 1,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 33,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 15884.99,
-      "aggregate_pct": 15.885,
-      "mean_pct": 2.2693
+      "realized_usd": 14536.53,
+      "aggregate_pct": 14.5365,
+      "mean_pct": 2.0766
     },
     {
       "seed": 2,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 36,
+      "contested_days": 26,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 13896.1,
-      "aggregate_pct": 13.8961,
-      "mean_pct": 1.9852
+      "realized_usd": 12949.08,
+      "aggregate_pct": 12.9491,
+      "mean_pct": 1.8499
     },
     {
       "seed": 3,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 32,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 15198.28,
-      "aggregate_pct": 15.1983,
-      "mean_pct": 2.1712
+      "realized_usd": 12921.97,
+      "aggregate_pct": 12.922,
+      "mean_pct": 1.846
     },
     {
       "seed": 4,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 30,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 17280.25,
-      "aggregate_pct": 17.2803,
-      "mean_pct": 2.4686
+      "realized_usd": 16156.68,
+      "aggregate_pct": 16.1567,
+      "mean_pct": 2.3081
     },
     {
       "seed": 5,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 28,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 17679.84,
-      "aggregate_pct": 17.6798,
-      "mean_pct": 2.5257
+      "realized_usd": 16525.35,
+      "aggregate_pct": 16.5253,
+      "mean_pct": 2.3608
     },
     {
       "seed": 6,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 33,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 18023.1,
-      "aggregate_pct": 18.0231,
-      "mean_pct": 2.5747
+      "realized_usd": 16486.1,
+      "aggregate_pct": 16.4861,
+      "mean_pct": 2.3552
     },
     {
       "seed": 7,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 37,
+      "contested_days": 33,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 15986.47,
-      "aggregate_pct": 15.9865,
-      "mean_pct": 2.2838
+      "realized_usd": 14480.37,
+      "aggregate_pct": 14.4804,
+      "mean_pct": 2.0686
     },
     {
       "seed": 8,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 26,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 18350.38,
-      "aggregate_pct": 18.3504,
-      "mean_pct": 2.6215
+      "realized_usd": 16949.61,
+      "aggregate_pct": 16.9496,
+      "mean_pct": 2.4214
     },
     {
       "seed": 9,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 33,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 16863.67,
-      "aggregate_pct": 16.8637,
-      "mean_pct": 2.4091
+      "realized_usd": 15744.79,
+      "aggregate_pct": 15.7448,
+      "mean_pct": 2.2493
     },
     {
       "seed": 10,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 32,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 15372.56,
-      "aggregate_pct": 15.3726,
-      "mean_pct": 2.1961
+      "realized_usd": 14186.66,
+      "aggregate_pct": 14.1867,
+      "mean_pct": 2.0267
     },
     {
       "seed": 11,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 32,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 18401.74,
-      "aggregate_pct": 18.4017,
-      "mean_pct": 2.6288
+      "realized_usd": 16579.12,
+      "aggregate_pct": 16.5791,
+      "mean_pct": 2.3684
     },
     {
       "seed": 12,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 37,
+      "contested_days": 33,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
@@ -373,119 +624,119 @@
       "seed": 13,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 33,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 18734.19,
-      "aggregate_pct": 18.7342,
-      "mean_pct": 2.6763
+      "realized_usd": 17559.24,
+      "aggregate_pct": 17.5592,
+      "mean_pct": 2.5085
     },
     {
       "seed": 14,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 35,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 17857.73,
-      "aggregate_pct": 17.8577,
-      "mean_pct": 2.5511
+      "realized_usd": 15989.8,
+      "aggregate_pct": 15.9898,
+      "mean_pct": 2.2843
     },
     {
       "seed": 15,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 37,
+      "contested_days": 30,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 16606.48,
-      "aggregate_pct": 16.6065,
-      "mean_pct": 2.3724
+      "realized_usd": 15183.08,
+      "aggregate_pct": 15.1831,
+      "mean_pct": 2.169
     },
     {
       "seed": 16,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 31,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 16461.38,
-      "aggregate_pct": 16.4614,
-      "mean_pct": 2.3516
+      "realized_usd": 16004.56,
+      "aggregate_pct": 16.0046,
+      "mean_pct": 2.2864
     },
     {
       "seed": 17,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 29,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 16143.37,
-      "aggregate_pct": 16.1434,
-      "mean_pct": 2.3062
+      "realized_usd": 14267.06,
+      "aggregate_pct": 14.2671,
+      "mean_pct": 2.0382
     },
     {
       "seed": 18,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 31,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 16536.71,
-      "aggregate_pct": 16.5367,
-      "mean_pct": 2.3624
+      "realized_usd": 15140.86,
+      "aggregate_pct": 15.1409,
+      "mean_pct": 2.163
     },
     {
       "seed": 19,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 35,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 15926.33,
-      "aggregate_pct": 15.9263,
-      "mean_pct": 2.2752
+      "realized_usd": 15172.49,
+      "aggregate_pct": 15.1725,
+      "mean_pct": 2.1675
     },
     {
       "seed": 20,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 32,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 17476.2,
-      "aggregate_pct": 17.4762,
-      "mean_pct": 2.4966
+      "realized_usd": 16921.33,
+      "aggregate_pct": 16.9213,
+      "mean_pct": 2.4173
     },
     {
       "seed": 21,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 34,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
@@ -499,272 +750,553 @@
       "seed": 22,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 32,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 17213.0,
-      "aggregate_pct": 17.213,
-      "mean_pct": 2.459
+      "realized_usd": 15794.5,
+      "aggregate_pct": 15.7945,
+      "mean_pct": 2.2564
     },
     {
       "seed": 23,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 28,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 17269.86,
-      "aggregate_pct": 17.2699,
-      "mean_pct": 2.4671
+      "realized_usd": 14195.68,
+      "aggregate_pct": 14.1957,
+      "mean_pct": 2.028
     },
     {
       "seed": 24,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 37,
+      "contested_days": 32,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 17897.11,
-      "aggregate_pct": 17.8971,
-      "mean_pct": 2.5567
+      "realized_usd": 15918.32,
+      "aggregate_pct": 15.9183,
+      "mean_pct": 2.274
     },
     {
       "seed": 25,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 37,
+      "contested_days": 34,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 18499.03,
-      "aggregate_pct": 18.499,
-      "mean_pct": 2.6427
+      "realized_usd": 17068.92,
+      "aggregate_pct": 17.0689,
+      "mean_pct": 2.4384
     },
     {
       "seed": 26,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 29,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 18282.63,
-      "aggregate_pct": 18.2826,
-      "mean_pct": 2.6118
+      "realized_usd": 15275.35,
+      "aggregate_pct": 15.2753,
+      "mean_pct": 2.1822
     },
     {
       "seed": 27,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 30,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 19123.57,
-      "aggregate_pct": 19.1236,
-      "mean_pct": 2.7319
+      "realized_usd": 16978.58,
+      "aggregate_pct": 16.9786,
+      "mean_pct": 2.4255
     },
     {
       "seed": 28,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 31,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 18796.36,
-      "aggregate_pct": 18.7964,
-      "mean_pct": 2.6852
+      "realized_usd": 18333.05,
+      "aggregate_pct": 18.3331,
+      "mean_pct": 2.619
     },
     {
       "seed": 29,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 32,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 19126.5,
-      "aggregate_pct": 19.1265,
-      "mean_pct": 2.7324
+      "realized_usd": 16234.33,
+      "aggregate_pct": 16.2343,
+      "mean_pct": 2.3192
     },
     {
       "seed": 30,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 28,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 17632.57,
-      "aggregate_pct": 17.6326,
-      "mean_pct": 2.5189
+      "realized_usd": 16020.26,
+      "aggregate_pct": 16.0203,
+      "mean_pct": 2.2886
     },
     {
       "seed": 31,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 33,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 17116.61,
-      "aggregate_pct": 17.1166,
-      "mean_pct": 2.4452
+      "realized_usd": 15417.53,
+      "aggregate_pct": 15.4175,
+      "mean_pct": 2.2025
     },
     {
       "seed": 32,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 37,
+      "contested_days": 33,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 15728.89,
-      "aggregate_pct": 15.7289,
-      "mean_pct": 2.247
+      "realized_usd": 14949.64,
+      "aggregate_pct": 14.9496,
+      "mean_pct": 2.1357
     },
     {
       "seed": 33,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 32,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 17732.7,
-      "aggregate_pct": 17.7327,
-      "mean_pct": 2.5332
+      "realized_usd": 15119.82,
+      "aggregate_pct": 15.1198,
+      "mean_pct": 2.16
     },
     {
       "seed": 34,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 37,
+      "contested_days": 28,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 15401.84,
-      "aggregate_pct": 15.4018,
-      "mean_pct": 2.2003
+      "realized_usd": 13499.85,
+      "aggregate_pct": 13.4998,
+      "mean_pct": 1.9285
     },
     {
       "seed": 35,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 32,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 18447.57,
-      "aggregate_pct": 18.4476,
-      "mean_pct": 2.6354
+      "realized_usd": 14391.11,
+      "aggregate_pct": 14.3911,
+      "mean_pct": 2.0559
     },
     {
       "seed": 36,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 28,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 17724.56,
-      "aggregate_pct": 17.7246,
-      "mean_pct": 2.5321
+      "realized_usd": 16345.68,
+      "aggregate_pct": 16.3457,
+      "mean_pct": 2.3351
     },
     {
       "seed": 37,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 32,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 18695.98,
-      "aggregate_pct": 18.696,
-      "mean_pct": 2.6709
+      "realized_usd": 16364.65,
+      "aggregate_pct": 16.3647,
+      "mean_pct": 2.3378
     },
     {
       "seed": 38,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 36,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 19919.6,
-      "aggregate_pct": 19.9196,
-      "mean_pct": 2.8457
+      "realized_usd": 16823.83,
+      "aggregate_pct": 16.8238,
+      "mean_pct": 2.4034
     },
     {
       "seed": 39,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 35,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 18524.72,
-      "aggregate_pct": 18.5247,
-      "mean_pct": 2.6464
+      "realized_usd": 17295.76,
+      "aggregate_pct": 17.2958,
+      "mean_pct": 2.4708
     },
     {
       "seed": 40,
       "quotes": 152,
       "family_evals": 76,
-      "contested_days": 38,
+      "contested_days": 32,
       "selected_days": 38,
       "risk_rejects": 26,
       "opened": 12,
       "settled": 7,
       "still_open": 5,
-      "realized_usd": 17881.92,
-      "aggregate_pct": 17.8819,
-      "mean_pct": 2.5546
+      "realized_usd": 16196.6,
+      "aggregate_pct": 16.1966,
+      "mean_pct": 2.3138
+    },
+    {
+      "seed": 41,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 34,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 16629.72,
+      "aggregate_pct": 16.6297,
+      "mean_pct": 2.3757
+    },
+    {
+      "seed": 42,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 32,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 16613.24,
+      "aggregate_pct": 16.6132,
+      "mean_pct": 2.3733
+    },
+    {
+      "seed": 43,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 29,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 15283.81,
+      "aggregate_pct": 15.2838,
+      "mean_pct": 2.1834
+    },
+    {
+      "seed": 44,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 31,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 14762.89,
+      "aggregate_pct": 14.7629,
+      "mean_pct": 2.109
+    },
+    {
+      "seed": 45,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 27,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 15163.03,
+      "aggregate_pct": 15.163,
+      "mean_pct": 2.1661
+    },
+    {
+      "seed": 46,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 34,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 16310.07,
+      "aggregate_pct": 16.3101,
+      "mean_pct": 2.33
+    },
+    {
+      "seed": 47,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 34,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 13250.96,
+      "aggregate_pct": 13.251,
+      "mean_pct": 1.893
+    },
+    {
+      "seed": 48,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 34,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 15284.66,
+      "aggregate_pct": 15.2847,
+      "mean_pct": 2.1835
+    },
+    {
+      "seed": 49,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 32,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 14815.07,
+      "aggregate_pct": 14.8151,
+      "mean_pct": 2.1164
+    },
+    {
+      "seed": 50,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 28,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 15162.45,
+      "aggregate_pct": 15.1625,
+      "mean_pct": 2.1661
+    },
+    {
+      "seed": 51,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 31,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 14963.32,
+      "aggregate_pct": 14.9633,
+      "mean_pct": 2.1376
+    },
+    {
+      "seed": 52,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 34,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 15133.58,
+      "aggregate_pct": 15.1336,
+      "mean_pct": 2.1619
+    },
+    {
+      "seed": 53,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 34,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 15510.34,
+      "aggregate_pct": 15.5103,
+      "mean_pct": 2.2158
+    },
+    {
+      "seed": 54,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 34,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 17487.75,
+      "aggregate_pct": 17.4878,
+      "mean_pct": 2.4983
+    },
+    {
+      "seed": 55,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 32,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 15344.17,
+      "aggregate_pct": 15.3442,
+      "mean_pct": 2.192
+    },
+    {
+      "seed": 56,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 34,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 16205.88,
+      "aggregate_pct": 16.2059,
+      "mean_pct": 2.3151
+    },
+    {
+      "seed": 57,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 34,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 16730.72,
+      "aggregate_pct": 16.7307,
+      "mean_pct": 2.3901
+    },
+    {
+      "seed": 58,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 32,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 15748.3,
+      "aggregate_pct": 15.7483,
+      "mean_pct": 2.2498
+    },
+    {
+      "seed": 59,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 33,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 14020.29,
+      "aggregate_pct": 14.0203,
+      "mean_pct": 2.0029
+    },
+    {
+      "seed": 60,
+      "quotes": 152,
+      "family_evals": 76,
+      "contested_days": 31,
+      "selected_days": 38,
+      "risk_rejects": 26,
+      "opened": 12,
+      "settled": 7,
+      "still_open": 5,
+      "realized_usd": 15404.42,
+      "aggregate_pct": 15.4044,
+      "mean_pct": 2.2006
     }
   ],
   "notes": {
     "synthetic": true,
     "epistemic_note": "SYNTHETIC/paper diagnostic only \u2014 on the current sample and reconstruction there is no proof of a positive edge. Never read as a real-trading forecast.",
-    "unit_rule": "aggregate = \u03a3(per-position % of notional) over settled positions; mean = aggregate / N. Never read the aggregate as per-cycle."
+    "unit_rule": "aggregate = \u03a3(per-position % of notional) over settled positions; mean = aggregate / N. Never read the aggregate as per-cycle.",
+    "stop_rule": "exactly ONE \u03c3 estimator change is pre-registered (v0.4.0 C1); no further estimator iterations inside v0.4.0 regardless of measured breach \u2014 the nominal is a property of a correct \u03c3, the estimator is not a knob for reaching the nominal (decision record STOP RULE)"
   }
 }

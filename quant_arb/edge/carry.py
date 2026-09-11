@@ -14,6 +14,15 @@ v0.3.0 — two sigmas with two MEANINGS (decision record C2):
   H-day window", estimated from overlapping historical window means. The
   v0.2.0 calibration finding (98.7 % breach vs 4.55 % nominal) was exactly the
   confusion of the two; they are now separate, named, and journaled apart.
+
+v0.4.0 — σ_H round 2 (decision record docs/decision-record-v0.4.0.md):
+- ``horizon_sigma_trend_apr`` → σ_H v2 = trend-aware horizon σ:
+  dispersion (the v0.3 value, kept verbatim as the audit component) PLUS the
+  trend-continuation exposure |β̂|·H/2. The v0.3 value alone measured 35.0 %
+  breach vs the 4.55 % nominal — the residual was trend drift, which no
+  stationary-mean estimator (HAC measured 73.2 %, REJECTED) captures. One σ,
+  one meaning: the z_perp gate, the carry buffer and the journal all carry
+  the same trend-aware number; the v0.3 component is journaled next to it.
 """
 
 from __future__ import annotations
@@ -82,6 +91,68 @@ def horizon_sigma_apr(obs: Sequence[FundingObservation], horizon_days: float) ->
         "window_days": L,
         "n_windows": n_windows,
         "scale_sqrt": round(scale, 4),
+    }
+
+
+def horizon_sigma_trend_apr(
+    obs: Sequence[FundingObservation], horizon_days: float,
+    trend_window_days: int = 60,
+) -> Tuple[float, dict]:
+    """σ_H v2 — trend-aware horizon σ (decision record v0.4.0 C1).
+
+    The honest ex-ante uncertainty of "mean funding APR over the next H days
+    around the current level estimate":
+
+        σ_A = v0.3 overlapping-window iid-block value   (audit component, kept)
+        β̂   = OLS slope of daily printed APRs over the last min(n, M) days
+        σ_H = sqrt( σ_A² + (|β̂| · H / 2)² )
+
+    Interpretation of the trend term: how far a CONTINUING local trend moves
+    the future window mean away from today's level — the exact quantity the
+    v0.3 calibration residual was made of (ramp drift), and the quantity a
+    stationary-mean estimator (HAC) averages away. Deterministic, no RNG;
+    backward-looking only (generator parameters never read).
+
+    Fail-closed: fewer than 3 daily observations, or a degenerate zero σ_H →
+    returns 0.0 so the perp z-gate FAILS (persistence unproven), same
+    semantics as v0.3.0. Returns (sigma_apr, diagnostics); diagnostics are
+    journaled with every use so the upgrade is auditable, never asserted.
+    """
+    if horizon_days <= 0:
+        raise ValueError("horizon_days must be positive")
+    if trend_window_days < 3:
+        raise ValueError("trend_window_days must be >= 3")
+
+    sigma_iid, diag_iid = horizon_sigma_apr(obs, horizon_days)
+    dailies = daily_printed_aprs(obs)
+    n = len(dailies)
+    if n < 3 or sigma_iid <= 0:
+        return 0.0, {"method": "insufficient_history", "n_days": n,
+                     "trend_window_days": 0, "sigma_iid_block": round(sigma_iid, 6),
+                     "beta_hat_apr_per_day": 0.0, "trend_term_apr": 0.0}
+
+    m = min(n, int(trend_window_days))
+    y = [apr for _, apr in dailies[-m:]]
+    x = list(range(m))
+    mx = sum(x) / m
+    my = sum(y) / m
+    num = sum((x[i] - mx) * (y[i] - my) for i in range(m))
+    den = sum((x[i] - mx) ** 2 for i in range(m))
+    beta = num / den if den > 0 else 0.0          # APR per day, signed
+    trend_term = abs(beta) * horizon_days / 2.0   # exposure is two-sided
+    sigma_h = math.hypot(sigma_iid, trend_term)
+    if sigma_h <= 0:
+        return 0.0, {"method": "degenerate_zero", "n_days": n,
+                     "trend_window_days": m, "sigma_iid_block": round(sigma_iid, 6),
+                     "beta_hat_apr_per_day": 0.0, "trend_term_apr": 0.0}
+    return sigma_h, {
+        "method": "iid_block_plus_trend_continuation",
+        "n_days": n,
+        "trend_window_days": m,
+        "sigma_iid_block": round(sigma_iid, 6),
+        "beta_hat_apr_per_day": round(beta, 8),
+        "trend_term_apr": round(trend_term, 6),
+        "iid_block_diag": diag_iid,
     }
 
 

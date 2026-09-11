@@ -22,7 +22,7 @@ import math
 from typing import List
 
 from ..edge.all_in_edge import EdgeParams, evaluate_perp_carry
-from ..edge.carry import ewma_funding, horizon_sigma_apr
+from ..edge.carry import ewma_funding, horizon_sigma_trend_apr
 from ..models.opportunity import CarryEstimate, ExecutableLeg, Opportunity
 from .base import FamilyEvaluation, ScanContext
 
@@ -41,7 +41,11 @@ class PerpCarryStrategy:
 
         p = self.params
         realized_apr, sigma_level_apr = ewma_funding(ctx.funding_obs, self.ewma_half_life_h)
-        sigma_h_apr, sigma_diag = horizon_sigma_apr(ctx.funding_obs, tenor_days)
+        # v0.4.0 (decision record C1): trend-aware σ_H — dispersion + trend
+        # continuation exposure. The v0.3 iid-block component is journaled
+        # next to it as the audit value. One σ, one meaning, everywhere.
+        sigma_h_apr, sigma_diag = horizon_sigma_trend_apr(ctx.funding_obs, tenor_days)
+        sigma_h_iid = sigma_diag.get("sigma_iid_block", 0.0)
 
         spot_mid = ctx.spot_ask.ref_mid.value
         spot_ask = ctx.spot_ask.px.value
@@ -75,6 +79,7 @@ class PerpCarryStrategy:
             signal_z=None if (z_perp is None or math.isinf(z_perp)) else z_perp,
             detail={
                 "expected_apr": round(realized_apr, 6),
+                "sigma_horizon_iid_apr": round(sigma_h_iid, 6),
                 "sigma_horizon_diag": sigma_diag,
                 "waterfall": waterfall.to_payload(),
             },
@@ -90,6 +95,7 @@ class PerpCarryStrategy:
         realized_apr = ev.detail["expected_apr"]
         sigma_level_apr = ev.sigma_level_apr
         sigma_h_apr = ev.sigma_horizon_apr
+        sigma_h_iid = ev.detail.get("sigma_horizon_iid_apr", 0.0)
         gates = dict(ev.gates)
         z_perp = ev.signal_z if ev.signal_z is not None else 0.0   # gated-in implies z ≥ min_z
 
@@ -113,7 +119,8 @@ class PerpCarryStrategy:
             locked=False,
             expected_usd=expected_carry_usd,
             sigma_usd=sigma_h_apr * tenor_days / 365.0 * requested_size_usd,
-            description="floating funding carry over tenor; σ_H = horizon window dispersion",
+            description="floating funding carry over tenor; σ_H = trend-aware horizon σ "
+                        "(dispersion + trend-continuation exposure, v0.4.0 C1)",
         )
 
         confidence = min(1.0, z_perp / (2.0 * p.min_z))   # monotone in persistence
@@ -131,6 +138,7 @@ class PerpCarryStrategy:
                 "expected_apr": realized_apr,
                 "sigma_level_apr": round(sigma_level_apr, 6),
                 "sigma_horizon_apr": round(sigma_h_apr, 6),
+                "sigma_horizon_iid_apr": round(sigma_h_iid, 6),
                 "ref_mid": spot_mid,
                 "gates": gates,
                 "waterfall": ev.detail["waterfall"],

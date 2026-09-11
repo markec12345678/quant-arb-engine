@@ -22,25 +22,26 @@ transfer is **conceptual knowledge** (schemas, invariants, lessons).
 | `models/market_data.py` | `Price = value + PriceSource + ts` (I-1). `FundingObservation` normalizes per-interval rates to hourly/annualized. `RFQQuote` embeds the entire fee model in the quoted price; `all_in_cost_bps` is the crossing cost vs `ref_mid`, counted once (I-4). |
 | `models/opportunity.py` | The universal shape every strategy emits: executable legs (direction, qty, fill price), `requested_size_usd` **and** `executed_size_usd = qty × px` (I-2/I-6), carry estimate (locked vs estimated + σ), edge numbers, horizon, confidence. |
 | `models/journal.py` | Append-only JSONL. `validate_record()` runs **before** every write: I-1 price source, I-2 executed notional, I-3 signed-only PnL field names, I-5 quantity chain flag, I-6 both size fields, canonical epistemic note + unit fields on summaries. Violations raise `JournalInvariantError`; nothing invalid is ever persisted. |
-| `edge/carry.py` | **Two sigmas, two meanings (v0.3)**: `ewma_funding(obs, h) → (apr, σ_level)` — estimator standard error (std/√eff_n), the uncertainty of "what funding pays NOW"; `horizon_sigma_apr(obs, H) → (σ_H, diag)` — empirical dispersion of H-day window means (daily print aggregation → overlapping L-day windows → iid-block scaling; deterministic, no RNG; diagnostics journaled with every use). Also `forward_implied_apr`, `carry_gap_z`, `daily_printed_aprs`. |
+| `edge/carry.py` | **Two sigmas, two meanings (v0.3), one trend-aware upgrade (v0.4)**: `ewma_funding(obs, h) → (apr, σ_level)` — estimator standard error (std/√eff_n), the uncertainty of "what funding pays NOW"; `horizon_sigma_apr(obs, H) → (σ_H, diag)` — empirical dispersion of H-day window means (daily print aggregation → overlapping L-day windows → iid-block scaling; deterministic, no RNG; diagnostics journaled with every use); `horizon_sigma_trend_apr(obs, H, M=60) → (σ_H_v2, diag)` — **σ_H v2 = √(σ_A² + (|β̂|·H/2)²)**: dispersion + trend-continuation exposure (OLS slope of daily printed APRs over the last min(n, 60) days; the v0.3 value journaled next to it as the audit component; fail-closed under 3 days or degenerate zero). Also `forward_implied_apr`, `carry_gap_z`, `daily_printed_aprs`. |
 | `edge/all_in_edge.py` | The waterfall: `gross − entry − exit − slippage − carry_uncertainty − execution_risk = net_executable_edge`. Each line explicit and journaled. Two evaluators: `evaluate_forward_basis` (carry buffer from σ_level — carry is locked, only benchmark/early-exit risk) and `evaluate_perp_carry` (carry buffer from σ_H — funding floats, horizon risk is real; entry adds EXPLICIT CEX lines: taker fee + half-spread). `EdgeParams` holds the **pre-registered gates** (`min_net_edge_bps=10`, `min_z=2.0`, `perp_taker_fee_bps=5`, `perp_half_spread_bps=1`). |
 | `feeds/mock_rfq.py` | Deterministic seeded **world v2**: spot GBM; funding APR as OU around a regime mean that ramps 8 % → 18 % (days 30–120), holds, then COLLAPSES 18 % → 4 % (days 150–180); noisy 8h funding prints; a desk that prices forwards off a *slow* EWMA of observed funding + quote noise; `perp_mark()` (PERP_MARK source) and `printed_funding_between(ts_from, ts_to)` for accrual. `SYNTHETIC_MOCK` price source everywhere (I-1 honesty). |
 | `strategies/*` | `Strategy.evaluate(ctx, size, tenor) → FamilyEvaluation` (gates, edges, BOTH sigmas, signal_z, detail — journaled for every family every quote day) + `scan(...) → [Opportunity]`. Implemented: `ForwardBasisStrategy` (Route B, lock carry; net-edge gate, level z kept as diagnostic) and `PerpCarryStrategy` (float carry; net-edge gate AND horizon persistence z_perp = E/σ_H ≥ min_z, fail-closed when σ_H = 0). Planned: funding-arb port — same interface. |
 | `risk/caps.py` | `check(opp, open_count, caps) → (ok, reasons[])` — every reject is enumerated and journaled. Research placeholders until W0 returns real desk terms. |
 | `positions.py` | `PaperPosition`: OPEN → SETTLED. Settle computes per-leg **signed** PnL `(exit − entry) × qty × direction` (I-3) — forward legs at the settlement print, perp legs at the exit mark, spot at the desk bid — verifies exit ts > entry ts (I-5), adds the signed `funding_accrual_usd` (perp family: Σ printed rates × qty × entry ref mid, a documented approximation) and returns the ex-ante vs realized comparison payload. |
-| `pipeline.py` | The run loop: advance day → journal `funding_daily` (the observation stream — source of truth for every research re-derivation) → settle matured → (every N days) journal quotes → **evaluate BOTH families → journal `family_eval` (with selection known) → ranking (higher net edge wins, tie → forward, pre-registered) → scan winner → risk-gate → open**. Summary enforces the unit rule (aggregate Σ % vs mean per position) and the epistemic note; `research_compare` carries the ex-ante estimator state (ap, σ_level, σ_H). |
+| `pipeline.py` | The run loop: advance day → journal `funding_daily` (the observation stream — source of truth for every research re-derivation) → settle matured → (every N days) journal quotes → **evaluate BOTH families → journal `family_eval` (with selection known) → ranking (higher net edge wins, tie → forward, pre-registered) → scan winner → risk-gate → open**. Summary enforces the unit rule (aggregate Σ % vs mean per position) and the epistemic note; `research_compare` carries the ex-ante estimator state (apr, σ_level, σ_H trend-aware + the v0.3 iid audit value). |
 | `research/stats.py` | Pure-stdlib distribution helpers (`mean`, sample std, numpy-style linear percentiles, `dist_obj`). Machinery diagnostics on a synthetic world — never market evidence. |
 
-## Data flow (two families + ranking, v0.3)
+## Data flow (two families + ranking, v0.4)
 
 ```
 mock CEX funding prints ──► EWMA (apr, σ_level) ──┐
          │                                         ├─► level z (diagnostic only)
-         └──► horizon σ_H (overlapping windows) ──┘
-                                                   
+         └──► σ_H v2 = √(σ_A² + (|β̂|H/2)²) ───────┘
+              (trend-aware; σ_A = v0.3 value, journaled as audit)
+
 desk forward RFQ ──► implied APR ──► forward_basis_v1 ── net-edge gate
 CEX perp mark ────────────────────► perp_carry_v1 ───── net-edge gate AND z_perp = E/σ_H ≥ 2
-                                                   
+                                                   (carry buffer k·σ_H — trend-aware)
         BOTH families evaluated + journaled EVERY quote day (family_eval)
                    ↓
         RANKING: execute the higher net executable edge (tie → forward)
@@ -58,17 +59,25 @@ flat to day 150, **collapses 18 % → 4 % over days 150–180**, flat 4 % after.
 The desk's slow (30-day half-life) pricing lags both turns:
 
 - during the build-up the desk under-prices carry → the floating perp family
-  has the higher net edge → ranking selects `perp_carry_v1` (30.2 % of
-  ramp-phase contests went to the forward);
+  has the higher ex-post carry (the realized path beat the stale desk premium
+  in v0.3, when the small iid σ_H let it win the ranking 60.2 % of contests).
+  **v0.4 honest twist**: the trend-aware carry buffer deflates the perp's net
+  executable edge, so the ranking now takes the LOCKED forward on ~94 % of
+  selected days — and the ex-post hit-rate falls to 11.4 % (P4 REFUTED,
+  reported as the round's headline finding: honest two-sided uncertainty
+  pricing has a measured price in a world whose drift was upside for the
+  floating side);
 - during/after the collapse the desk's stale-high premiums become the trade →
-  the dated forward wins the ranking (79.5 % of collapse-phase contests).
+  the dated forward wins the ranking (95.8 % of collapse-phase contests —
+  sharpened from 79.5 %, P5 SUPPORTED).
 
 Sample run (seed 7, 200 days, 90d tenor): 152 quotes → 76 family evals →
-37 contested days → 38 selected (14 forward / 24 perp) → 26 risk rejects
-(open-position cap) → 12 opened → 7 settled (+$15,986 synthetic) with the
-forward lock still holding through settlement (realized − locked ≈ −exit
-cost) and the perp positions settling on printed funding accrual — exactly
-what each instrument must do.
+71 gated-in family-days → 33 contested → 38 selected (36 forward / 2 perp) →
+26 risk rejects (open-position cap) → 12 opened → 7 settled (+$14,480
+synthetic, all forward) with the forward lock still holding through
+settlement (realized − locked ≈ −exit cost) — and the calibration panels
+pooled across 60 seeds: σ_level 68.3 % (audit) · σ_H iid 35.5 % (audit) ·
+σ_H trend 11.0 % (redefined; nominal 4.55 %), holdout Δ +1.7 pp.
 
 **The synthetic numbers validate the machinery, not any market.** Changing the
 seed changes the numbers; the invariants do not change.
@@ -84,7 +93,7 @@ seed changes the numbers; the invariants do not change.
 2. **Funding-arb port** — the locked system's scanner semantics become a
    third `Strategy` emitting the same `Opportunity` shape; its venue
    tickers/funding map onto `Price`/`FundingObservation` with honest sources.
-3. **Research layer** — **EXISTS (v0.2.0 → v0.3.0)**: `scripts/research_sweep.py`
+3. **Research layer** — **EXISTS (v0.2.0 → v0.4.0)**: `scripts/research_sweep.py`
    runs the deterministic pipeline across seeds 1..40 (one invariant-enforced
    journal per seed under `research/artifacts/sweep_runs/`) and overwrites
    two stable artifacts — `run-latest.json` (representative seed: summary,

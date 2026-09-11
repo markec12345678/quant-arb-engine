@@ -140,6 +140,10 @@ def run(cfg: RunConfig, out_path: str) -> Dict:
                     "ex_ante_apr": md.get("expected_apr", md.get("realized_apr")),
                     "ex_ante_sigma_apr": md.get("sigma_level_apr", md.get("realized_sigma_apr")),
                     "ex_ante_sigma_horizon_apr": md.get("sigma_horizon_apr"),
+                    # v0.4.0 (C2): the v0.3 iid-block component at entry — the
+                    # audit value next to the trend-aware gate σ, so the sweep
+                    # can show BOTH panels without reconstruction.
+                    "ex_ante_sigma_horizon_iid_apr": md.get("sigma_horizon_iid_apr"),
                 }
                 journal.append("position_settled", payload)
                 settled_payloads.append(payload)
