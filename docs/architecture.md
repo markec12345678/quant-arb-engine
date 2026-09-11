@@ -121,7 +121,14 @@ seed changes the numbers; the invariants do not change.
 2. **W1 real feed research** — the **journal replayer EXISTS (v0.6.2)**:
    `quant_arb/feeds/journal_replay.py` (sealed `docs/w1-replay-adapter.md` —
    mapping M-1…M-10, source wall at the Price layer, funding/settlement
-   surfaces refused loudly). What remains for W1: the research design record
+   surfaces refused loudly), **and the coverage census EXISTS (v0.6.3)**:
+   `quant_arb/feeds/coverage.py` + `scripts/rfq_coverage.py` (sealed
+   `docs/w1-coverage-report.md`, rules C-1…C-9 — per-family eligibility
+   breakdown with ineligible records counted, not silently dropped; day/tenor
+   coverage with partial-pair days named; unclassified buckets,
+   report-don't-refuse; the source wall applies; read-only, deterministic;
+   `--json` output the W1 record cites as inclusion criteria). What remains
+   for W1: the research design record
    itself (uncertainty → ranking → GO/NO-GO on real quotes — requires its
    **own sealed decision record before any number is produced**) AND the
    funding-data question (adapter record §1: the 15-field schema carries

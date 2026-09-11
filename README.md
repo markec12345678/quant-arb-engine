@@ -71,6 +71,7 @@ Module map:
 | `quant_arb/edge/all_in_edge.py` | **ALL-IN EDGE waterfall** — every subtraction explicit, nothing folded into gross (I-4). Two waterfalls: `evaluate_forward_basis` (locked premium) and `evaluate_perp_carry` (floating carry, explicit CEX cost lines) |
 | `quant_arb/feeds/mock_rfq.py` | Deterministic synthetic world **v2** (seeded): CEX funding prints + OTC desk spot/forward RFQ quotes + perp mark; regime ramps **and collapses**. **SYNTHETIC — research only** |
 | `quant_arb/feeds/journal_replay.py` | **W1-INFRA (v0.6.2)**: `JournalReplayFeed` — replays a W0 raw RFQ journal into the typed quote vocabulary (sealed `docs/w1-replay-adapter.md`, mapping M-1…M-10: quoted+firm eligibility, requesting-side→desk bid/ask, I-1 provenance incl. the new `REFERENCE_OTHER`, size=notional/px, ttl=expiry−ts, `-FWD-{n}D` tenor convention fail-closed, one feed=one family, source wall at the Price layer, read-only, funding/settlement surfaces refused loudly). Bridge for the W1 research record — infrastructure, not research |
+| `quant_arb/feeds/coverage.py` | **W1-INFRA (v0.6.3)**: `journal_coverage()` + `render_report()` — the research-readiness census of a W0 journal (sealed `docs/w1-coverage-report.md`, rules C-1…C-9: per-family eligibility breakdown with the honest cost of collection friction (expired/rejected/no_response/indicative counted, not silently dropped), day coverage with partial-pair days named, tenor census, unclassified bad-symbol/other-kind buckets — report-don't-refuse, never crashes on what it counts; source wall; read-only; deterministic). The output the future W1 sealed record cites as inclusion criteria — measurement, not research |
 | `quant_arb/strategies/forward_basis.py` | **Route B, family `forward_basis_v1`** (lock carry): long spot @ desk ask + short dated forward @ desk bid; gates on net edge (level z retired to diagnostic — decision record C4) |
 | `quant_arb/strategies/perp_carry.py` | **Family `perp_carry_v1`** (float carry): long spot @ desk ask + short CEX perp @ mark; floating funding accrual at settle; gates on net edge AND horizon persistence z_perp = E/σ_down ≥ 2 (a downside persistence ratio since v0.5) |
 | `quant_arb/risk/caps.py` | Research caps — per-position notional, tenor, open-position count; enumerated reject reasons |
@@ -81,7 +82,7 @@ Module map:
 | `scripts/research_sweep.py` | Multi-seed sweep CLI (v0.5: 80 seeds = screening 1..60 + holdout 61..80 + like-for-like 1..40); overwrites the stable `run-latest.json` / `sweep-latest.json` derived summaries for the tower |
 | `quant_arb/rfq/` | **W0 (v0.6): the real-world data layer** — `schema.py` `ExternalRFQ` (the 15 user-specified fields + the `source` epistemic wall + verbatim `raw`, write-time invariants R-1…R-13), `journal.py` immutable hash-chained raw journal (tamper/reorder/insertion detection; head-vs-status truncation bound), `edge.py` deterministic ALL-IN EDGE accounting (I-4 descendant: fees charged exactly once), `replay.py` descriptive reporting |
 | `quant_arb/rfq/providers/` | Pluggable adapters — `file_ingest.py` (REAL: desk exports JSONL/JSON/CSV), `webhook.py` (REAL: push receiver, one command when a provider exists), `synthetic.py` (TEST ONLY, `source="synthetic"` hardwired), `base.py` declarative `FieldMap` normalization (ISO→epoch, bps→pct, side/status synonyms) |
-| `scripts/rfq_ingest.py` · `rfq_replay.py` · `rfq_webhook_recv.py` | W0 CLIs — ingest (`--dry-run` first-contact validation writes NOTHING) / verify+replay (descriptive accounting only) / webhook receiver |
+| `scripts/rfq_ingest.py` · `rfq_replay.py` · `rfq_webhook_recv.py` · `rfq_coverage.py` | W0/W1-INFRA CLIs — ingest (`--dry-run` first-contact validation writes NOTHING) / verify+replay (descriptive accounting only) / webhook receiver / coverage census (`--json`, `--family`; the one-command research-readiness answer before any W1 record is sealed) |
 
 ## Run the research demo (zero network, zero capital)
 
@@ -149,20 +150,26 @@ python3 scripts/rfq_replay.py --markdown
 # push-provider receiver (run when a feed exists; binds 127.0.0.1)
 python3 scripts/rfq_webhook_recv.py --port 3901 --token SHARED_SECRET
 
-# reproduce every W0 invariant check from the repo alone (71 checks, exit = failures)
+# research-readiness census of the journal (families, eligibility, days, tenors)
+python3 scripts/rfq_coverage.py            # human report
+python3 scripts/rfq_coverage.py --json     # machine-readable, for the W1 record
+
+# reproduce every W0 invariant check from the repo alone (92 checks, exit = failures)
 python3 research/exploration/verify_w0_invariants.py
 ```
 
 Honest status as shipped: **0 real records** — no RFQ desk API credentials exist
-in this environment. The machinery is complete, invariant-checked (71 checks:
+in this environment. The machinery is complete, invariant-checked (92 checks:
 fully reproducible from the repo via
 `research/exploration/verify_w0_invariants.py`: chain tamper/reorder/insert/
 truncate detection, duplicate-id rejection (journal + within-batch), future
 reference rejection, determinism, source wall, edge accounting, field-map
 synonyms, dry-run writes-nothing, malformed-row isolation, webhook receiver —
 token gate, duplicate/future-ts rejection, malformed JSON, only-valid-journaled,
-and the W1-INFRA replay adapter — source wall, provenance mapping, tenor
-convention, refused funding/settlement surfaces, read-only replay) and
+the W1-INFRA replay adapter — source wall, provenance mapping, tenor
+convention, refused funding/settlement surfaces, read-only replay — and the
+W1-INFRA coverage census — eligibility breakdown, day/tenor coverage,
+unclassified buckets, CLI e2e) and
 exercised end-to-end on all three adapters; real data starts flowing the
 moment a feed is connected (W0→W1).
 
@@ -187,6 +194,32 @@ W1 research record (or the user, for a schema extension).
 the constructor refuses; `allow_synthetic=True` is the machinery-test mode and
 stamps `SYNTHETIC_MOCK` on every quote — the wall travels inside the data,
 I-1 enforces it downstream.
+
+## W1-INFRA (v0.6.3) — the coverage report (research-readiness census)
+
+Full design record: [`docs/w1-coverage-report.md`](docs/w1-coverage-report.md)
+(sealed 2026-09-11, **before** implementation). The measurement half that
+closes W1-INFRA: when a real feed connects, **one command** answers what the
+journal actually supports — per family: eligibility breakdown (the honest
+cost of collection friction: expired / no_response / indicative counted,
+not silently dropped), quote-day coverage with partial-pair days named, tenor
+census, perp days, venues, and unclassified bad-symbol/other-kind buckets
+(report-don't-refuse — the mirror image of the adapter's M-6 refusal; the
+census's job is to *reveal* convention violations before replay is attempted).
+
+* Its entire purpose: the future W1 research design record **cites this
+census as its inclusion criteria** — reproducible, from real data only (the
+source wall applies: synthetic journals refused by default).
+* **Census, not research** (sealed decision 5): no averages, no spreads, no
+edges — the moment a statistic stops being a census it becomes W1 research
+and needs its own sealed record. Empty journals are a valid report (0
+families), never an error.
+* Ships with an additive observability fix: `JournalReplayFeed.describe()`
+gains an `ineligible` counter (M-1 drops, counted not silently dropped).
+
+```bash
+python3 scripts/rfq_coverage.py --json   # the one-command readiness answer
+```
 
 ## v0.3 — Instrument choice, honest horizon σ, ranking (decision record)
 

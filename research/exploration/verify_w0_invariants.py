@@ -471,6 +471,138 @@ try:
         check("replay M-6 bad forward symbol refused", False, "no exception")
     except ReplayError as e:
         check("replay M-6 bad forward symbol refused", "M-6" in str(e))
+
+    # --- 11. W1-INFRA coverage report (v0.6.3, sealed docs/w1-coverage-report.md) ---
+    import hashlib as _h3
+    import subprocess as _sp
+    from quant_arb.feeds.coverage import (CoverageError, journal_coverage,
+                                          render_report)
+
+    # 11a: source wall — the smoke journal is synthetic; default census refuses (C-7)
+    try:
+        journal_coverage(smoke)
+        check("coverage source wall refuses synthetic journal (C-7)",
+              False, "no exception")
+    except CoverageError as e:
+        check("coverage source wall refuses synthetic journal (C-7)", "C-7" in str(e))
+
+    # 11b: machinery mode works on the smoke journal; read-only (C-8)
+    _sm_before2 = _h3.sha256(open(smoke_path, "rb").read()).hexdigest()
+    cov_syn = journal_coverage(smoke, allow_synthetic=True)
+    check("coverage machinery mode: families census + byte-identical (C-8)",
+          cov_syn["synthetic_mode"] is True and len(cov_syn["families"]) >= 1
+          and _h3.sha256(open(smoke_path, "rb").read()).hexdigest() == _sm_before2)
+
+    # 11c: hand-built REAL journal — the full census surface
+    DAY3 = T0 + 2 * 86_400_000
+    cj = RawRFQJournal(os.path.join(tmp, "cov.jsonl"))
+    for rec in [
+        mk2(rfq_id="RB-C1", side="buy", quoted_price=99.6),
+        mk2(rfq_id="RS-C1", side="sell", quoted_price=99.4),
+        mk2(rfq_id="FB-C1", instrument="BTC-USD-FWD-30D", instrument_kind="forward",
+            side="buy", quoted_price=101.0, quote_expiry_ts=T0 + 30 * 86_400_000),
+        mk2(rfq_id="FS-C1", instrument="BTC-USD-FWD-30D", instrument_kind="forward",
+            side="sell", quoted_price=100.9, quote_expiry_ts=T0 + 30 * 86_400_000),
+        mk2(rfq_id="PP-C1", instrument="BTC-USD-PERP", instrument_kind="perp",
+            side="buy", quoted_price=100.2, reference_price=100.1,
+            reference_source="perp_mark"),
+        mk2(rfq_id="RB-C2", ts=DAY2, quote_expiry_ts=DAY2 + 30_000,
+            reference_ts=DAY2 - 1000, side="buy", quoted_price=100.6),
+        mk2(rfq_id="RS-C2", ts=DAY2, quote_expiry_ts=DAY2 + 30_000,
+            reference_ts=DAY2 - 1000, side="sell", quoted_price=100.4),
+        mk2(rfq_id="RB-C3", ts=DAY3, quote_expiry_ts=DAY3 + 30_000,
+            reference_ts=DAY3 - 1000, side="buy", quoted_price=101.6),
+        mk2(rfq_id="EX-C1", status="expired", quoted_price=None, quote_type=None,
+            quote_expiry_ts=None, fees_included_in_price=None, spread_bps=None,
+            reject_reason="desk_timeout"),
+        mk2(rfq_id="NR-C1", status="no_response", quoted_price=None, quote_type=None,
+            quote_expiry_ts=None, fees_included_in_price=None, spread_bps=None),
+        mk2(rfq_id="IN-C1", quote_type="indicative", side="buy", quoted_price=98.0),
+        mk2(rfq_id="CC-C1", notional_ccy="EUR", side="sell", quoted_price=99.4),
+        mk2(rfq_id="BF-C1", instrument="BTC-USD-FWD-30", instrument_kind="forward"),
+        mk2(rfq_id="CF-C1", instrument_kind="cfd"),
+        mk2(rfq_id="EB-C1", instrument="ETH-USD", side="buy", quoted_price=3.6),
+        mk2(rfq_id="ES-C1", instrument="ETH-USD", side="sell", quoted_price=3.59),
+    ]:
+        cj.append(rec)
+    _cj_before = _h3.sha256(open(cj.path, "rb").read()).hexdigest()
+    cov = journal_coverage(cj)
+    btc = next(f for f in cov["families"] if f["symbol"] == "BTC-USD")
+    eth = next(f for f in cov["families"] if f["symbol"] == "ETH-USD")
+
+    check("coverage: two families, sorted (C-1/C-9)",
+          [f["symbol"] for f in cov["families"]] == ["BTC-USD", "ETH-USD"])
+    check("coverage BTC: eligibility breakdown exact (C-3: 12 family records, "
+          "8 eligible, 1 expired + 1 no_response + 1 indicative — bad-symbol "
+          "and other-kind records stay unclassified)",
+          btc["total_records"] == 12 and btc["eligible"] == 8
+          and btc["ineligible"]["by_status"] == {"expired": 1, "no_response": 1}
+          and btc["ineligible"]["indicative"] == 1)
+    check("coverage BTC: unusable named with M-4 shape",
+          len(btc["unusable"]) == 1 and "CC-C1" in btc["unusable"][0]
+          and "M-4" in btc["unusable"][0])
+    check("coverage BTC: day coverage (3 quote days, 2026-01-01…03) (C-5)",
+          btc["quote_days"] == 3 and btc["first_day"] == "2026-01-01"
+          and btc["last_day"] == "2026-01-03")
+    check("coverage BTC: spot 2 full pair + partial day [3] (C-6)",
+          btc["spot_days"] == 3 and btc["spot_full_pair_days"] == 2
+          and btc["partial_spot_days"] == [3])
+    check("coverage BTC: tenor census 30D — 2 rec, 1 full pair (C-6)",
+          btc["tenors"] == {"30": {"records": 2, "full_pair_days": 1}})
+    check("coverage BTC: perp days + venues census",
+          btc["perp_days"] == 1 and btc["venues"] == ["DESK-R"])
+    check("coverage: unclassified buckets — report-don't-refuse (C-2)",
+          len(cov["unclassified"]["bad_symbols"]) == 1
+          and "BF-C1" in cov["unclassified"]["bad_symbols"][0]
+          and len(cov["unclassified"]["other_kinds"]) == 1
+          and "CF-C1" in cov["unclassified"]["other_kinds"][0])
+    check("coverage ETH: minimal family (2 eligible, 1 full-pair day)",
+          eth["total_records"] == 2 and eth["eligible"] == 2
+          and eth["spot_full_pair_days"] == 1 and eth["quote_days"] == 1)
+    check("coverage: read-only — journal byte-identical (C-8)",
+          _h3.sha256(open(cj.path, "rb").read()).hexdigest() == _cj_before)
+
+    # 11d: family filter + determinism + JSON contract (C-9)
+    cov_eth = journal_coverage(cj, family="ETH-USD")
+    check("coverage: --family filter restricts to one family (C-9)",
+          [f["symbol"] for f in cov_eth["families"]] == ["ETH-USD"])
+    check("coverage: deterministic — same journal, same report (C-9)",
+          journal_coverage(cj) == cov)
+    check("coverage: JSON-serializable contract (C-9)",
+          json.loads(json.dumps(cov))["kind"] == "rfq-journal-coverage")
+
+    # 11e: the additive replay-feed observability fix (describe()['ineligible'])
+    rf_c = JournalReplayFeed(rj, "BTC-USD")
+    check("replay describe(): ineligible counter counts M-1 drops (C-3 additive)",
+          rf_c.describe()["ineligible"] == 1)     # IN-1 (indicative) in the 10c journal
+
+    # 11f: empty journal — a valid honest report, never an error (sealed decision 6)
+    ej = RawRFQJournal(os.path.join(tmp, "empty.jsonl"))
+    cov_e = journal_coverage(ej)
+    check("coverage: empty journal → 0 families, honest render",
+          cov_e["families"] == [] and "no classifiable records" in render_report(cov_e))
+
+    # 11g: CLI end-to-end (scripts/rfq_coverage.py) — real subprocesses
+    cli = os.path.join(os.path.dirname(__file__), "..", "..", "scripts",
+                       "rfq_coverage.py")
+    r1 = _sp.run([sys.executable, cli, "--journal", cj.path, "--json"],
+                 capture_output=True, text=True)
+    ok1 = (r1.returncode == 0 and json.loads(r1.stdout)["chain"]["lines"] == 16
+           and len(json.loads(r1.stdout)["families"]) == 2)
+    check("coverage CLI: --json report, exit 0, census matches", ok1, r1.stderr[-200:])
+    r2 = _sp.run([sys.executable, cli, "--smoke-journal"],
+                 capture_output=True, text=True)
+    check("coverage CLI: smoke journal walled without --allow-synthetic (exit 1)",
+          r2.returncode == 1 and "C-7" in r2.stderr)
+    r3 = _sp.run([sys.executable, cli, "--journal", cj.path],
+                 capture_output=True, text=True)
+    check("coverage CLI: human render contains the family + census-only line",
+          r3.returncode == 0 and "BTC-USD" in r3.stdout
+          and "no research number" in r3.stdout)
+    r4 = _sp.run([sys.executable, cli, "--journal", cj.path, "--family", "BTC"],
+                 capture_output=True, text=True)
+    check("coverage CLI: bad family symbol refused (C-1 BASE-QUOTE form)",
+          r4.returncode == 1 and "C-1" in r4.stderr)
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 

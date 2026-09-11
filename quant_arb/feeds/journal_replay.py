@@ -88,12 +88,14 @@ class JournalReplayFeed:
         days: Dict[int, _QuoteDay] = {}
         unusable: List[str] = []
         n_used = 0
+        n_ineligible = 0                # additive v0.6.3 census observability
         for rec in journal.iter_records():
             family = self._family_of(rec)
             if family is None:
                 continue
             if not (rec.status == "quoted" and rec.quote_type == "firm"):
-                continue                                            # M-1
+                n_ineligible += 1                                   # M-1 (counted, C-3)
+                continue
             if rec.notional_ccy != rec.price_ccy:
                 unusable.append(f"{rec.rfq_id}: notional_ccy={rec.notional_ccy} "
                                 f"!= price_ccy={rec.price_ccy} (M-4)")
@@ -121,6 +123,7 @@ class JournalReplayFeed:
         self._days: List[_QuoteDay] = [days[k] for k in sorted(days)]
         self._unusable = unusable
         self._n_used = n_used
+        self._n_ineligible = n_ineligible
         self._idx = -1                   # replay not started (M-7)
 
     # ------------------------------------------------------------ family helpers
@@ -293,5 +296,6 @@ class JournalReplayFeed:
             "synthetic_mode": self._allow_synthetic,
             "quote_days": len(self._days),
             "records_used": self._n_used,
+            "ineligible": self._n_ineligible,   # C-3: M-1 failures, counted not dropped
             "unusable": list(self._unusable),
         }
