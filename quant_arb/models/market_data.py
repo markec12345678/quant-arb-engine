@@ -28,6 +28,7 @@ class PriceSource(str, Enum):
     PERP_LAST = "perp_last"
     DESK_RFQ_QUOTE = "desk_rfq_quote"          # OTC desk quote (e.g. Wintermute NODE)
     SETTLEMENT_PRINT = "settlement_print"      # final settlement / fixing
+    REFERENCE_OTHER = "reference_other"        # explicit unknown provenance — never naked (I-1; W1-INFRA M-3)
     SYNTHETIC_MOCK = "synthetic_mock"          # deterministic research world
 
 

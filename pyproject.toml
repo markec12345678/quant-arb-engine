@@ -1,6 +1,6 @@
 [project]
 name = "quant-arb-engine"
-version = "0.6.1"
+version = "0.6.2"
 description = "Multi-strategy arbitrage research engine (paper/research only) — sibling of funding-arb (locked measurement baseline)."
 readme = "README.md"
 requires-python = ">=3.10"

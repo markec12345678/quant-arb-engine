@@ -22,6 +22,13 @@ def check(name, cond, detail=""):
     print(("PASS " if cond else "FAIL ") + name + (f"  [{detail}]" if detail and not cond else ""))
     if not cond: FAILS.append(name)
 
+def _raises_notimpl(fn, *a):
+    try:
+        fn(*a)
+        return False
+    except NotImplementedError:
+        return True
+
 T0 = 1_767_225_600_000  # 2026-01-01Z
 def mk(**kw):
     base = dict(rfq_id="X-1", instrument="BTC-USD", venue="DESK-A", ts=T0,
@@ -330,6 +337,140 @@ try:
               and next(wh_j.iter_records()).rfq_id == "WH-1")
     finally:
         wh_srv.shutdown(); wh_srv.server_close()
+
+    # --- 10. W1-INFRA journal replay feed (v0.6.2, sealed docs/w1-replay-adapter.md) ---
+    import hashlib as _h2
+    from quant_arb.feeds.journal_replay import JournalReplayFeed, ReplayError
+    from quant_arb.models.market_data import PriceSource
+
+    # 10a: source wall — the smoke journal is synthetic; default constructor refuses
+    smoke_path = os.path.abspath(os.path.join(
+        os.path.dirname(__file__), "..", "artifacts", "rfq",
+        "journal-synthetic-smoke.jsonl"))
+    smoke = RawRFQJournal(smoke_path, create_parent=False)
+    try:
+        JournalReplayFeed(smoke, "BTC-USD")
+        check("replay source wall refuses synthetic journal", False, "no exception")
+    except ReplayError as e:
+        check("replay source wall refuses synthetic journal", "M-8" in str(e))
+    # 10b: machinery-test mode constructs, quotes carry SYNTHETIC_MOCK provenance
+    import hashlib as _hsm
+    _sm_before = _hsm.sha256(open(smoke_path, "rb").read()).hexdigest()
+    rf_syn = JournalReplayFeed(smoke, "BTC-USD", allow_synthetic=True)
+    d_syn = rf_syn.describe()
+    check("replay smoke: describe is honest (sources, synthetic_mode)",
+          d_syn["sources"] == {"synthetic": 200} and d_syn["synthetic_mode"] is True
+          and d_syn["quote_days"] >= 1 and d_syn["chain"]["lines"] == 200)
+    saw_syn_quote = False
+    try:
+        while True:
+            rf_syn.advance_day()
+            try:
+                b, a = rf_syn.spot_quotes()
+                saw_syn_quote = (a.px.source == PriceSource.SYNTHETIC_MOCK
+                                 and b.px.source == PriceSource.SYNTHETIC_MOCK)
+                break
+            except ReplayError:
+                continue   # day without a full pair — keep walking
+    except ReplayError:
+        pass            # exhausted without a pair — acceptable; determinism is what matters
+    check("replay smoke: synthetic quotes carry SYNTHETIC_MOCK (I-1 wall travels)",
+          saw_syn_quote)
+    check("replay leaves journal byte-identical (M-9)",
+          _hsm.sha256(open(smoke_path, "rb").read()).hexdigest() == _sm_before)
+
+    # 10c: hand-built REAL journal — the full mapping surface
+    def mk2(**kw):
+        base = dict(rfq_id="R-1", instrument="BTC-USD", venue="DESK-R", ts=T0,
+                    side="buy", requested_notional=50_000.0, quoted_price=99.6,
+                    quote_type="firm", quote_expiry_ts=T0 + 30_000, fees_pct=0.04,
+                    fees_included_in_price=False, spread_bps=5.0,
+                    reference_price=100.0, reference_ts=T0 - 1000,
+                    reference_source="spot_book_mid", latency_ms=90.0,
+                    status="quoted", source="real",
+                    instrument_kind="spot", raw={})
+        base.update(kw)
+        return ExternalRFQ(**base)
+
+    DAY2 = T0 + 86_400_000
+    rj = RawRFQJournal(os.path.join(tmp, "real.jsonl"))
+    for rec in [
+        mk2(rfq_id="RB-1", side="buy", quoted_price=99.6),
+        mk2(rfq_id="RS-1", side="sell", quoted_price=99.4),
+        mk2(rfq_id="FB-1", instrument="BTC-USD-FWD-30D", instrument_kind="forward",
+            side="buy", quoted_price=101.0, quote_expiry_ts=T0 + 30 * 86_400_000),
+        mk2(rfq_id="FS-1", instrument="BTC-USD-FWD-30D", instrument_kind="forward",
+            side="sell", quoted_price=100.9, quote_expiry_ts=T0 + 30 * 86_400_000),
+        mk2(rfq_id="PP-1", instrument="BTC-USD-PERP", instrument_kind="perp",
+            side="buy", quoted_price=100.2, reference_price=100.1,
+            reference_source="perp_mark"),
+        mk2(rfq_id="IN-1", quote_type="indicative", side="buy", quoted_price=98.0),
+        mk2(rfq_id="CC-1", notional_ccy="EUR", side="sell", quoted_price=99.4),
+        mk2(rfq_id="WU-1", side="sell", quoted_price=99.4,
+            reference_source="composite_index"),
+        mk2(rfq_id="RB-2", ts=DAY2, quote_expiry_ts=DAY2 + 30_000,
+            reference_ts=DAY2 - 1000, side="buy", quoted_price=100.6),
+        mk2(rfq_id="RS-2", ts=DAY2, quote_expiry_ts=DAY2 + 30_000,
+            reference_ts=DAY2 - 1000, side="sell", quoted_price=100.4),
+    ]:
+        rj.append(rec)
+    rf = JournalReplayFeed(rj, "BTC-USD")
+    d = rf.describe()
+    check("replay real: describe counts (2 days, 8 used, 1 unusable ccy)",
+          d["quote_days"] == 2 and d["records_used"] == 8 and len(d["unusable"]) == 1
+          and "CC-1" in d["unusable"][0])
+    check("replay real: not started surfaces raise (M-7)",
+          rf.day() == 0)
+    try:
+        rf.now_ms(); check("replay real: now_ms before start raises", False, "no exception")
+    except ReplayError:
+        check("replay real: now_ms before start raises", True)
+    rf.advance_day()
+    check("replay real: day 1 + now_ms = day's last eligible ts",
+          rf.day() == 1 and rf.now_ms() == T0)
+    bid, ask = rf.spot_quotes()
+    check("replay M-2 sides: sell→bid 99.4, buy→ask 99.6 (indicative NOT surfaced)",
+          bid.px.value == 99.4 and ask.px.value == 99.6
+          and ask.instrument.symbol == "BTC-USD")
+    check("replay M-3 provenance: px=DESK_RFQ_QUOTE; ask ref=SPOT_BOOK_MID; "
+          "latest sell (composite_index) → REFERENCE_OTHER — never naked",
+          ask.px.source == PriceSource.DESK_RFQ_QUOTE
+          and bid.px.source == PriceSource.DESK_RFQ_QUOTE
+          and ask.ref_mid.source == PriceSource.SPOT_BOOK_MID
+          and bid.ref_mid.source == PriceSource.REFERENCE_OTHER)
+    check("replay M-4/M-5: size=notional/px, ttl=expiry−ts",
+          abs(ask.size_quote - 50_000.0 / 99.6) < 1e-9
+          and ask.ttl_ms == 30_000)
+    fb, fa = rf.forward_quotes(30)
+    check("replay M-6: forward pair surfaced with tenor parsed",
+          fa.px.value == 101.0 and fb.px.value == 100.9
+          and fa.instrument.kind == "forward"
+          and fa.instrument.symbol == "BTC-USD-FWD-30D")
+    pm = rf.perp_mark()
+    check("replay perp_mark from perp-kind reference (PERP_MARK source)",
+          pm.value == 100.1 and pm.source == PriceSource.PERP_MARK)
+    check("replay M-10 refused surfaces raise NotImplementedError",
+          _raises_notimpl(lambda: rf.funding_obs)
+          and _raises_notimpl(rf.settlement_print)
+          and _raises_notimpl(rf.printed_funding_between, T0, T0 + 1)
+          and _raises_notimpl(rf.true_apr))
+    rf.advance_day()
+    check("replay real: day 2 surfaces the later pair",
+          rf.day() == 2 and rf.spot_quotes()[0].px.value == 100.4)
+    try:
+        rf.advance_day()
+        check("replay M-7 exhaustion raises", False, "no exception")
+    except ReplayError as e:
+        check("replay M-7 exhaustion raises", "exhausted" in str(e))
+
+    # 10d: M-6 fail-closed on unparseable forward symbol
+    bj = RawRFQJournal(os.path.join(tmp, "badfwd.jsonl"))
+    bj.append(mk2(rfq_id="BF-1", instrument="BTC-USD-FWD-XX", instrument_kind="forward"))
+    try:
+        JournalReplayFeed(bj, "BTC-USD")
+        check("replay M-6 bad forward symbol refused", False, "no exception")
+    except ReplayError as e:
+        check("replay M-6 bad forward symbol refused", "M-6" in str(e))
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 

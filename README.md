@@ -70,6 +70,7 @@ Module map:
 | `quant_arb/edge/carry.py` | Implied-carry math: **three sigmas, one gate** — `ewma_funding` → σ_level (instantaneous estimator error), `horizon_sigma_apr` → σ_A (iid-block window dispersion, v0.3 audit), `horizon_sigma_trend_apr` → σ_H two-sided (v0.4 audit), `horizon_sigma_downside_apr` → **σ_down, the adverse-side gate σ of v0.5** (falling trend charged in full, rising uncharged); forward-implied APR; gap z-score |
 | `quant_arb/edge/all_in_edge.py` | **ALL-IN EDGE waterfall** — every subtraction explicit, nothing folded into gross (I-4). Two waterfalls: `evaluate_forward_basis` (locked premium) and `evaluate_perp_carry` (floating carry, explicit CEX cost lines) |
 | `quant_arb/feeds/mock_rfq.py` | Deterministic synthetic world **v2** (seeded): CEX funding prints + OTC desk spot/forward RFQ quotes + perp mark; regime ramps **and collapses**. **SYNTHETIC — research only** |
+| `quant_arb/feeds/journal_replay.py` | **W1-INFRA (v0.6.2)**: `JournalReplayFeed` — replays a W0 raw RFQ journal into the typed quote vocabulary (sealed `docs/w1-replay-adapter.md`, mapping M-1…M-10: quoted+firm eligibility, requesting-side→desk bid/ask, I-1 provenance incl. the new `REFERENCE_OTHER`, size=notional/px, ttl=expiry−ts, `-FWD-{n}D` tenor convention fail-closed, one feed=one family, source wall at the Price layer, read-only, funding/settlement surfaces refused loudly). Bridge for the W1 research record — infrastructure, not research |
 | `quant_arb/strategies/forward_basis.py` | **Route B, family `forward_basis_v1`** (lock carry): long spot @ desk ask + short dated forward @ desk bid; gates on net edge (level z retired to diagnostic — decision record C4) |
 | `quant_arb/strategies/perp_carry.py` | **Family `perp_carry_v1`** (float carry): long spot @ desk ask + short CEX perp @ mark; floating funding accrual at settle; gates on net edge AND horizon persistence z_perp = E/σ_down ≥ 2 (a downside persistence ratio since v0.5) |
 | `quant_arb/risk/caps.py` | Research caps — per-position notional, tenor, open-position count; enumerated reject reasons |
@@ -148,20 +149,44 @@ python3 scripts/rfq_replay.py --markdown
 # push-provider receiver (run when a feed exists; binds 127.0.0.1)
 python3 scripts/rfq_webhook_recv.py --port 3901 --token SHARED_SECRET
 
-# reproduce every W0 invariant check from the repo alone (54 checks, exit = failures)
+# reproduce every W0 invariant check from the repo alone (71 checks, exit = failures)
 python3 research/exploration/verify_w0_invariants.py
 ```
 
 Honest status as shipped: **0 real records** — no RFQ desk API credentials exist
-in this environment. The machinery is complete, invariant-checked (54 checks:
+in this environment. The machinery is complete, invariant-checked (71 checks:
 fully reproducible from the repo via
 `research/exploration/verify_w0_invariants.py`: chain tamper/reorder/insert/
 truncate detection, duplicate-id rejection (journal + within-batch), future
 reference rejection, determinism, source wall, edge accounting, field-map
 synonyms, dry-run writes-nothing, malformed-row isolation, webhook receiver —
-token gate, duplicate/future-ts rejection, malformed JSON, only-valid-journaled)
-and exercised end-to-end on all three adapters; real data starts flowing the
+token gate, duplicate/future-ts rejection, malformed JSON, only-valid-journaled,
+and the W1-INFRA replay adapter — source wall, provenance mapping, tenor
+convention, refused funding/settlement surfaces, read-only replay) and
+exercised end-to-end on all three adapters; real data starts flowing the
 moment a feed is connected (W0→W1).
+
+## W1-INFRA (v0.6.2) — the RFQ journal replay adapter
+
+Full design record: [`docs/w1-replay-adapter.md`](docs/w1-replay-adapter.md)
+(sealed 2026-09-11, **before** implementation). The bridge half of extension
+point 2: it replays a W0 journal into the engine's typed quote vocabulary
+(`RFQQuote` / `Price` / `Instrument`), so the future W1 research record —
+sealed separately, when real data exists — consumes provenance-carrying quotes
+instead of raw records. **Infrastructure, not research**: no uncertainty, no
+ranking, no GO/NO-GO number comes out of it.
+
+* The **honest capability map** (design record §1): the 15-field schema
+carries **quote events** — spot pairs, forward pairs, perp marks and reference
+mids replay. Funding observations, settlement prints and true APR are NOT RFQ
+fields and are **refused loudly** (M-10): synthesizing them from forwards would
+be an estimator smuggled in through infrastructure. Perp-carry settlement on
+real data needs a data class beyond the schema — that decision belongs to the
+W1 research record (or the user, for a schema extension).
+* The **source wall doubles at the Price layer** (M-8): any synthetic record →
+the constructor refuses; `allow_synthetic=True` is the machinery-test mode and
+stamps `SYNTHETIC_MOCK` on every quote — the wall travels inside the data,
+I-1 enforces it downstream.
 
 ## v0.3 — Instrument choice, honest horizon σ, ranking (decision record)
 

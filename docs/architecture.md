@@ -118,12 +118,16 @@ seed changes the numbers; the invariants do not change.
    nothing; webhook receiver ships; authenticated-REST poller is a documented
    slot). The invariant checks are tracked and reproducible from the repo:
    `research/exploration/verify_w0_invariants.py`.
-2. **W1 real feed research** — a journal-replayer of W0 RFQ records
-   implementing `funding_obs / spot_quotes / forward_quote / perp_mark` with
-   `PriceSource.DESK_RFQ_QUOTE`; the first real-data research round
-   (uncertainty → ranking → GO/NO-GO) requires its **own sealed decision
-   record before any number is produced**. Strategy code unchanged — the
-   research layer reads journals only.
+2. **W1 real feed research** — the **journal replayer EXISTS (v0.6.2)**:
+   `quant_arb/feeds/journal_replay.py` (sealed `docs/w1-replay-adapter.md` —
+   mapping M-1…M-10, source wall at the Price layer, funding/settlement
+   surfaces refused loudly). What remains for W1: the research design record
+   itself (uncertainty → ranking → GO/NO-GO on real quotes — requires its
+   **own sealed decision record before any number is produced**) AND the
+   funding-data question (adapter record §1: the 15-field schema carries
+   quote events only; perp-carry settlement needs a data class beyond RFQs —
+   a schema extension is user-owned, the 15 fields are user-specified).
+   Strategy code unchanged — the research layer reads journals only.
 3. **Funding-arb port** — the locked system's scanner semantics become a
    third `Strategy` emitting the same `Opportunity` shape; its venue
    tickers/funding map onto `Price`/`FundingObservation` with honest sources.
