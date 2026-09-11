@@ -32,9 +32,9 @@ transfer is **conceptual knowledge** (schemas, invariants, lessons).
 | `research/stats.py` | Pure-stdlib distribution helpers (`mean`, sample std, numpy-style linear percentiles, `dist_obj`). Machinery diagnostics on a synthetic world — never market evidence. |
 | `rfq/schema.py` | **W0 (v0.6)**: `ExternalRFQ` — the 15 user-specified external RFQ fields with write-time invariants R-1…R-13 (fail-closed `RFQSchemaError`), plus the `source` epistemic wall (`real`/`synthetic`, `is_research_eligible`) and the verbatim `raw` payload. R-10: reference price always carries provenance (I-1 descendant); R-11: market data never from the future. |
 | `rfq/journal.py` | **W0**: `RawRFQJournal` — append-only hash-chained JSONL (`hash = sha256(seq, prev_hash, received_ts, source, rfq)`); tamper/reorder/insertion detected and named by line; no update/delete API; advisory-lock single writer; head-vs-status truncation bound (`verify(expect_head=…)`); per-record schema re-validation on every read (defence in depth). |
-| `rfq/providers/` | **W0**: `FieldMap` declarative normalization (dotted paths, ISO→epoch, bps→pct, side/status/quote-type synonyms, underscore keys as comments); `FileRFQProvider` (real), `WebhookReceiver` (real, constant-time token), `SyntheticRFQProvider` (test-only, `source="synthetic"` hardwired). Provider declares its source — the wall's single enforcement point on ingest. |
+| `rfq/providers/` | **W0**: `FieldMap` declarative normalization (dotted paths, ISO→epoch, bps→pct, side/status/quote-type synonyms, underscore keys as comments); `FileRFQProvider` (real), `WebhookReceiver` (real, constant-time token), `SyntheticRFQProvider` (test-only, `source="synthetic"` hardwired). Provider declares its source — the wall's single enforcement point on ingest. **v0.6.1**: the provider contract is a strict `records()` walk plus `safe_records()` per-record isolation — `(index, record\|None, error\|None)` — so ONE malformed payload never aborts a keep-going/dry-run report; `effective_map()` is the dialect hook (the synthetic generator overrides the hook, not `records()`, so strict and safe walks are identical by construction). |
 | `rfq/edge.py` | **W0**: deterministic ALL-IN EDGE accounting — `price_edge_bps = side_sign·(ref−quoted)/ref·1e4`, `fee_cost_bps` charged **only** when `fees_included_in_price=false` (I-4 descendant), `all_in_edge_bps`. `describe()` → source-split descriptive stats (never pooled; `edges.pooled` is deliberately `null`). No uncertainty/ranking/GO-NO-GO — W1 territory. |
-| `rfq/ingest.py` + `rfq/replay.py` | **W0**: provider → normalize → validate → journal (fail-closed; `--keep-going` reports skips, never silent) → `rfq-status.json` derived artifact (chain head, source census, instruments/venues, tail) — the tower reads it read-only, same contract as run-latest/sweep-latest. Replay = verify + descriptive report + status refresh; `--refresh-status` is the documented recovery path. |
+| `rfq/ingest.py` + `rfq/replay.py` | **W0**: provider → normalize → validate → journal (fail-closed; `--keep-going` reports skips with per-row isolation via `safe_records`, never silent) → `rfq-status.json` derived artifact (chain head, source census, instruments/venues, tail) — the tower reads it read-only, same contract as run-latest/sweep-latest. **v0.6.1**: `dry_run()` validates + previews an unknown export WITHOUT writing anything (no journal line, no lock, no status refresh, no directories) — per-row named errors, duplicate detection vs the journal AND within the batch, would-be sources census; the `--dry-run` CLI flag is the first-contact tool (exit 1 if any row would be skipped). Replay = verify + descriptive report + status refresh; `--refresh-status` is the documented recovery path. |
 
 ## Data flow (two families + ranking, v0.5)
 
@@ -111,11 +111,13 @@ seed changes the numbers; the invariants do not change.
 
 ## Extension points (in order of arrival)
 
-1. **W0 real RFQ ingestion** — **EXISTS (v0.6)**: `quant_arb/rfq/` (see module
-   contracts). The raw immutable journal + adapters + deterministic ALL-IN EDGE
-   accounting; descriptive only. Real data starts when a feed is connected
-   (file export today; webhook receiver ships; authenticated-REST poller is a
-   documented slot).
+1. **W0 real RFQ ingestion** — **EXISTS (v0.6, hardened v0.6.1)**: `quant_arb/rfq/`
+   (see module contracts). The raw immutable journal + adapters + deterministic
+   ALL-IN EDGE accounting; descriptive only. Real data starts when a feed is
+   connected (file export today, `--dry-run` first-contact validation writes
+   nothing; webhook receiver ships; authenticated-REST poller is a documented
+   slot). The invariant checks are tracked and reproducible from the repo:
+   `research/exploration/verify_w0_invariants.py`.
 2. **W1 real feed research** — a journal-replayer of W0 RFQ records
    implementing `funding_obs / spot_quotes / forward_quote / perp_mark` with
    `PriceSource.DESK_RFQ_QUOTE`; the first real-data research round

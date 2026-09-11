@@ -270,6 +270,66 @@ try:
         check("fail-closed ingest still raises on malformed row", False, "no exception")
     except RFQSchemaError as e:
         check("fail-closed ingest still raises on malformed row", "[MAP]" in str(e))
+
+    # --- 9. webhook receiver (real HTTP, ephemeral port, in-process) -----------
+    #     Promotes the ad-hoc Task-27 e2e (200/422/422) to a tracked invariant:
+    #     token gate, duplicate/future-ts rejection, malformed JSON, path check,
+    #     and NOTHING journaled except the one valid payload.
+    import threading, urllib.request, urllib.error
+    from http.server import ThreadingHTTPServer
+    from quant_arb.rfq.providers.webhook import WebhookReceiver
+    wh_journal_path = os.path.join(tmp, "wh.jsonl")
+    wh_recv = WebhookReceiver(RawRFQJournal(wh_journal_path), FieldMap(),
+                              token="SECRET-TOKEN")
+    wh_srv = ThreadingHTTPServer(("127.0.0.1", 0), wh_recv.handler())
+    wh_port = wh_srv.server_address[1]
+    threading.Thread(target=wh_srv.serve_forever, daemon=True).start()
+    try:
+        def wh_post(path="/rfq", body=None, token="SECRET-TOKEN", raw_body=None):
+            data = raw_body if raw_body is not None else json.dumps(body).encode()
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{wh_port}{path}", data=data, method="POST",
+                headers={"Content-Type": "application/json",
+                         **({"X-RFQ-Token": token} if token is not None else {})})
+            try:
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    return resp.status, json.loads(resp.read())
+            except urllib.error.HTTPError as e:
+                return e.code, json.loads(e.read())
+
+        valid = {"rfq_id": "WH-1", "instrument": "BTC-USD", "venue": "DESK-W",
+                 "ts": T0, "side": "buy", "requested_notional": 25000,
+                 "quoted_price": 99.5, "quote_type": "firm",
+                 "quote_expiry_ts": T0 + 30000, "fees_pct": 0.04,
+                 "fees_included_in_price": False, "spread_bps": 6.0,
+                 "reference_price": 100.0, "reference_ts": T0 - 1000,
+                 "latency_ms": 80.0, "status": "quoted"}
+        code, obj = wh_post(body=valid)
+        check("webhook valid payload accepted (200, seq=1)",
+              code == 200 and obj.get("ok") is True and obj.get("seq") == 1
+              and obj.get("rfq_id") == "WH-1")
+        code, _ = wh_post(body=valid, token="WRONG")
+        check("webhook wrong token rejected (401)", code == 401)
+        code, _ = wh_post(body=valid, token=None)
+        check("webhook missing token rejected (401)", code == 401)
+        code, obj = wh_post(body=valid)
+        check("webhook duplicate rfq_id rejected (422, R-1)",
+              code == 422 and "R-1" in obj.get("error", ""))
+        code, obj = wh_post(body={**valid, "rfq_id": "WH-2",
+                                  "reference_ts": T0 + 5000})
+        check("webhook future reference_ts rejected (422, R-11)",
+              code == 422 and "R-11" in obj.get("error", ""))
+        code, _ = wh_post(raw_body=b"{not json")
+        check("webhook malformed JSON rejected (400)", code == 400)
+        code, _ = wh_post(path="/other", body=valid)
+        check("webhook unknown path rejected (404)", code == 404)
+        wh_j = RawRFQJournal(wh_journal_path, create_parent=False)
+        s_wh = wh_j.verify()
+        check("webhook: only the valid payload journaled (source=real)",
+              s_wh["lines"] == 1 and s_wh["sources"] == {"real": 1}
+              and next(wh_j.iter_records()).rfq_id == "WH-1")
+    finally:
+        wh_srv.shutdown(); wh_srv.server_close()
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 

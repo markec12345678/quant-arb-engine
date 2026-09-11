@@ -148,19 +148,20 @@ python3 scripts/rfq_replay.py --markdown
 # push-provider receiver (run when a feed exists; binds 127.0.0.1)
 python3 scripts/rfq_webhook_recv.py --port 3901 --token SHARED_SECRET
 
-# reproduce every W0 invariant check from the repo alone (46 checks, exit = failures)
+# reproduce every W0 invariant check from the repo alone (54 checks, exit = failures)
 python3 research/exploration/verify_w0_invariants.py
 ```
 
 Honest status as shipped: **0 real records** — no RFQ desk API credentials exist
-in this environment. The machinery is complete, invariant-checked (46 checks,
+in this environment. The machinery is complete, invariant-checked (54 checks:
 fully reproducible from the repo via
 `research/exploration/verify_w0_invariants.py`: chain tamper/reorder/insert/
 truncate detection, duplicate-id rejection (journal + within-batch), future
 reference rejection, determinism, source wall, edge accounting, field-map
-synonyms, dry-run writes-nothing, malformed-row isolation) and exercised
-end-to-end on all three adapters; real data starts flowing the moment a feed
-is connected (W0→W1).
+synonyms, dry-run writes-nothing, malformed-row isolation, webhook receiver —
+token gate, duplicate/future-ts rejection, malformed JSON, only-valid-journaled)
+and exercised end-to-end on all three adapters; real data starts flowing the
+moment a feed is connected (W0→W1).
 
 ## v0.3 — Instrument choice, honest horizon σ, ranking (decision record)
 
