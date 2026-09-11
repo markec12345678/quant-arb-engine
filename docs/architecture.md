@@ -30,8 +30,28 @@ transfer is **conceptual knowledge** (schemas, invariants, lessons).
 | `positions.py` | `PaperPosition`: OPEN → SETTLED. Settle computes per-leg **signed** PnL `(exit − entry) × qty × direction` (I-3) — forward legs at the settlement print, perp legs at the exit mark, spot at the desk bid — verifies exit ts > entry ts (I-5), adds the signed `funding_accrual_usd` (perp family: Σ printed rates × qty × entry ref mid, a documented approximation) and returns the ex-ante vs realized comparison payload. |
 | `pipeline.py` | The run loop: advance day → journal `funding_daily` (the observation stream — source of truth for every research re-derivation) → settle matured → (every N days) journal quotes → **evaluate BOTH families → journal `family_eval` (with selection known) → ranking (higher net edge wins, tie → forward, pre-registered) → scan winner → risk-gate → open**. Summary enforces the unit rule (aggregate Σ % vs mean per position) and the epistemic note; `research_compare` carries the ex-ante estimator state (apr, σ_level, σ_down adverse-side + the v0.4 two-sided and v0.3 iid audit values). |
 | `research/stats.py` | Pure-stdlib distribution helpers (`mean`, sample std, numpy-style linear percentiles, `dist_obj`). Machinery diagnostics on a synthetic world — never market evidence. |
+| `rfq/schema.py` | **W0 (v0.6)**: `ExternalRFQ` — the 15 user-specified external RFQ fields with write-time invariants R-1…R-13 (fail-closed `RFQSchemaError`), plus the `source` epistemic wall (`real`/`synthetic`, `is_research_eligible`) and the verbatim `raw` payload. R-10: reference price always carries provenance (I-1 descendant); R-11: market data never from the future. |
+| `rfq/journal.py` | **W0**: `RawRFQJournal` — append-only hash-chained JSONL (`hash = sha256(seq, prev_hash, received_ts, source, rfq)`); tamper/reorder/insertion detected and named by line; no update/delete API; advisory-lock single writer; head-vs-status truncation bound (`verify(expect_head=…)`); per-record schema re-validation on every read (defence in depth). |
+| `rfq/providers/` | **W0**: `FieldMap` declarative normalization (dotted paths, ISO→epoch, bps→pct, side/status/quote-type synonyms, underscore keys as comments); `FileRFQProvider` (real), `WebhookReceiver` (real, constant-time token), `SyntheticRFQProvider` (test-only, `source="synthetic"` hardwired). Provider declares its source — the wall's single enforcement point on ingest. |
+| `rfq/edge.py` | **W0**: deterministic ALL-IN EDGE accounting — `price_edge_bps = side_sign·(ref−quoted)/ref·1e4`, `fee_cost_bps` charged **only** when `fees_included_in_price=false` (I-4 descendant), `all_in_edge_bps`. `describe()` → source-split descriptive stats (never pooled; `edges.pooled` is deliberately `null`). No uncertainty/ranking/GO-NO-GO — W1 territory. |
+| `rfq/ingest.py` + `rfq/replay.py` | **W0**: provider → normalize → validate → journal (fail-closed; `--keep-going` reports skips, never silent) → `rfq-status.json` derived artifact (chain head, source census, instruments/venues, tail) — the tower reads it read-only, same contract as run-latest/sweep-latest. Replay = verify + descriptive report + status refresh; `--refresh-status` is the documented recovery path. |
 
 ## Data flow (two families + ranking, v0.5)
+
+```
+W0 · REAL WORLD (v0.6 — the ingestion lane, parallel to the research lane)
+
+desk export / webhook push ──► FileRFQProvider / WebhookReceiver
+        │ FieldMap normalize (verbatim raw preserved)
+        ▼
+ExternalRFQ (15 fields, R-1…R-13, source wall)
+        ▼
+RawRFQJournal (append-only, hash-chained, immutable)
+        │                          └──► rfq-status.json (derived; tower read-only)
+        ▼
+deterministic ALL-IN EDGE accounting (descriptive only — no verdicts;
+ uncertainty → ranking → GO/NO-GO on real data = W1, new decision record)
+```
 
 ```
 mock CEX funding prints ──► EWMA (apr, σ_level) ──┐
@@ -91,16 +111,21 @@ seed changes the numbers; the invariants do not change.
 
 ## Extension points (in order of arrival)
 
-1. **W1 real feed** — `WintermuteFeed` (or a journal-replayer of W1 RFQ quotes)
+1. **W0 real RFQ ingestion** — **EXISTS (v0.6)**: `quant_arb/rfq/` (see module
+   contracts). The raw immutable journal + adapters + deterministic ALL-IN EDGE
+   accounting; descriptive only. Real data starts when a feed is connected
+   (file export today; webhook receiver ships; authenticated-REST poller is a
+   documented slot).
+2. **W1 real feed research** — a journal-replayer of W0 RFQ records
    implementing `funding_obs / spot_quotes / forward_quote / perp_mark` with
-   `PriceSource.DESK_RFQ_QUOTE`. Strategy code unchanged. **Unchanged by
-   v0.3.0** — the research layer reads journals only; a real feed still
-   implements the same feed surface and swaps in behind the existing
-   interface.
-2. **Funding-arb port** — the locked system's scanner semantics become a
+   `PriceSource.DESK_RFQ_QUOTE`; the first real-data research round
+   (uncertainty → ranking → GO/NO-GO) requires its **own sealed decision
+   record before any number is produced**. Strategy code unchanged — the
+   research layer reads journals only.
+3. **Funding-arb port** — the locked system's scanner semantics become a
    third `Strategy` emitting the same `Opportunity` shape; its venue
    tickers/funding map onto `Price`/`FundingObservation` with honest sources.
-3. **Research layer** — **EXISTS (v0.2.0 → v0.4.0)**: `scripts/research_sweep.py`
+4. **Research layer** — **EXISTS (v0.2.0 → v0.5.0)**: `scripts/research_sweep.py`
    runs the deterministic pipeline across seeds 1..40 (one invariant-enforced
    journal per seed under `research/artifacts/sweep_runs/`) and overwrites
    two stable artifacts — `run-latest.json` (representative seed: summary,
@@ -111,7 +136,7 @@ seed changes the numbers; the invariants do not change.
    derived summaries, not journal-managed records — the journals stay the
    source of truth. Next in this lane: quote-cost distributions, ranking
    features beyond net edge (σ-adjusted), W1 feed replay.
-4. **Execution abstraction** — RFQ lifecycle state machine (quote → accept →
+5. **Execution abstraction** — RFQ lifecycle state machine (quote → accept →
    fill → settle) with fail-closed transitions, patterned on phase3-lab's
    certified separation (only after W2/W3 decisions).
 

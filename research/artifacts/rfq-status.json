@@ -1,0 +1,60 @@
+{
+  "artifact": "rfq-status",
+  "census": {
+    "instruments": [
+      "BTC-USD",
+      "BTC-USD-FWD-30D",
+      "ETH-USD",
+      "SOL-USD"
+    ],
+    "last_quote_ts": 1767272693490,
+    "venues": [
+      "DESK-A",
+      "DESK-B",
+      "DESK-C"
+    ]
+  },
+  "integrity": {
+    "head_hash": "ae37e2aa5963769f6c08630f9aeea7b56dc4d23e43ce46f6c711a51f31fc254b",
+    "lines": 200,
+    "ok": true,
+    "sources": {
+      "synthetic": 200
+    }
+  },
+  "journal_path": "research/artifacts/rfq/journal-synthetic-smoke.jsonl",
+  "note": "Raw RFQ journal (immutable, hash-chained). Synthetic records are test-only and never research-eligible. Descriptive accounting only \u2014 no research conclusions until a W1 decision record is sealed.",
+  "tail": [
+    {
+      "rfq_id": "SYN-000195",
+      "seq": 196,
+      "source": "synthetic",
+      "ts": 1767263059516
+    },
+    {
+      "rfq_id": "SYN-000196",
+      "seq": 197,
+      "source": "synthetic",
+      "ts": 1767243998882
+    },
+    {
+      "rfq_id": "SYN-000197",
+      "seq": 198,
+      "source": "synthetic",
+      "ts": 1767259043036
+    },
+    {
+      "rfq_id": "SYN-000198",
+      "seq": 199,
+      "source": "synthetic",
+      "ts": 1767252275410
+    },
+    {
+      "rfq_id": "SYN-000199",
+      "seq": 200,
+      "source": "synthetic",
+      "ts": 1767272693490
+    }
+  ],
+  "w0_version": 1
+}

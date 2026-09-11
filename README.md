@@ -35,7 +35,7 @@ every module here:
 ## Architecture
 
 ```
-                    QUANT ARB ENGINE  (v0.5 — adverse-side σ_H)
+                    QUANT ARB ENGINE  (v0.6 — W0: real RFQ ingestion layer)
                            │
              ┌─────────────┼─────────────┐
              ↓             ↓             ↓
@@ -53,6 +53,11 @@ every module here:
                     PAPER EXECUTION        ← position state machine, signed PnL
                            ↓
                     RESEARCH / RESULTS     ← append-only journal (JSONL)
+                           ↑
+              W0 · RAW RFQ JOURNAL       ← NEW v0.6: immutable hash-chained
+                           ↑               real-world ingestion layer
+                    RFQ PROVIDERS          ← file ingest / webhook receiver /
+                                             synthetic (test-only) adapters
 ```
 
 Module map:
@@ -73,6 +78,9 @@ Module map:
 | `quant_arb/research/stats.py` | Pure-stdlib distribution helpers (mean, sample std, numpy-style linear percentiles) for sweep summaries — machinery diagnostics, never market evidence |
 | `scripts/research_run.py` | CLI entry point (single run) |
 | `scripts/research_sweep.py` | Multi-seed sweep CLI (v0.5: 80 seeds = screening 1..60 + holdout 61..80 + like-for-like 1..40); overwrites the stable `run-latest.json` / `sweep-latest.json` derived summaries for the tower |
+| `quant_arb/rfq/` | **W0 (v0.6): the real-world data layer** — `schema.py` `ExternalRFQ` (the 15 user-specified fields + the `source` epistemic wall + verbatim `raw`, write-time invariants R-1…R-13), `journal.py` immutable hash-chained raw journal (tamper/reorder/insertion detection; head-vs-status truncation bound), `edge.py` deterministic ALL-IN EDGE accounting (I-4 descendant: fees charged exactly once), `replay.py` descriptive reporting |
+| `quant_arb/rfq/providers/` | Pluggable adapters — `file_ingest.py` (REAL: desk exports JSONL/JSON/CSV), `webhook.py` (REAL: push receiver, one command when a provider exists), `synthetic.py` (TEST ONLY, `source="synthetic"` hardwired), `base.py` declarative `FieldMap` normalization (ISO→epoch, bps→pct, side/status synonyms) |
+| `scripts/rfq_ingest.py` · `rfq_replay.py` · `rfq_webhook_recv.py` | W0 CLIs — ingest / verify+replay (descriptive accounting only) / webhook receiver |
 
 ## Run the research demo (zero network, zero capital)
 
@@ -83,6 +91,64 @@ python3 scripts/research_run.py --days 120 --seed 3 --tenor 60
 
 Writes an append-only journal to `research/artifacts/run_<ts>.jsonl` and prints a
 summary. Requires Python ≥ 3.10, **stdlib only — no dependencies.**
+
+## W0 (v0.6) — Real RFQ ingestion: the transition to the real world
+
+Full design record: [`docs/w0-rfq-ingestion.md`](docs/w0-rfq-ingestion.md)
+(sealed 2026-09-11, **before** implementation). W0 is the user-approved parallel
+move: while funding-arb collects its 7-day Phase-2 baseline untouched, the engine
+builds the **real-world data layer** — not a new estimator, not a research round:
+
+* **`ExternalRFQ` schema** — the 15 user-specified fields (instrument, venue,
+  timestamp, side, requested notional, quoted price, firm/indicative, quote
+  expiry, fees, spread, reference market price, market-data timestamp, latency,
+  response status, unique RFQ ID), each with a write-time invariant (R-1…R-13,
+  fail-closed). Reference prices carry provenance (I-1 descendant); market data
+  from the future is rejected (R-11).
+* **Immutable raw RFQ journal** — append-only JSONL, **hash-chained** per line:
+  tampering, reordering and insertion are detected and named by line; the head
+  hash is re-checked against the derived status artifact, bounding tail
+  truncation. The provider payload is preserved **verbatim** alongside the
+  normalized record. The REAL journal (`research/artifacts/rfq/journal.jsonl`)
+  is **gitignored by design** (desk data may be proprietary).
+* **The source wall** — every record carries `source: real | synthetic`;
+  synthetic is hardwired in the test generator and structurally excluded from
+  research aggregation (the report shows sources **split, never pooled**). The
+  ingest CLI **refuses** to write synthetic records into the real journal.
+* **Deterministic ALL-IN EDGE accounting** (per record, bps of reference):
+  `price_edge − fees` with fees charged **exactly once** (only when NOT embedded
+  in the quoted price — the I-4 lesson). Descriptive statistics only: **no
+  uncertainty term, no ranking, no GO/NO-GO** — that chain on real data is W1
+  research and requires its own sealed decision record first.
+* **Provider adapters** — `file` (REAL: desk exports / user-held RFQ history in
+  JSONL/JSON/CSV via a declarative `--field-map`), `webhook` (REAL: one-command
+  push receiver for Paradigm-style providers, shared-secret token supported),
+  `synthetic` (TEST ONLY, the pipeline exerciser). An authenticated-REST poller
+  is a documented **slot** that lands with W1 when a source is connected —
+  writing it without credentials would be untestable theater.
+
+```bash
+# ingest a real desk export (first real-data path, usable today)
+python3 scripts/rfq_ingest.py --provider file --path export.jsonl \
+    --field-map quant_arb/rfq/providers/example_field_map.json
+
+# pipeline smoke (synthetic, test-only, tracked journal)
+python3 scripts/rfq_ingest.py --provider synthetic --n 200 --seed 7 --smoke-journal
+
+# verify chain + truncation bound; descriptive replay report; status artifact
+python3 scripts/rfq_replay.py --verify-only
+python3 scripts/rfq_replay.py --markdown
+
+# push-provider receiver (run when a feed exists; binds 127.0.0.1)
+python3 scripts/rfq_webhook_recv.py --port 3901 --token SHARED_SECRET
+```
+
+Honest status as shipped: **0 real records** — no RFQ desk API credentials exist
+in this environment. The machinery is complete, invariant-checked (37 checks:
+chain tamper/reorder/insert/truncate detection, duplicate-id rejection, future
+reference rejection, determinism, source wall, edge accounting, field-map
+synonyms) and exercised end-to-end on all three adapters; real data starts
+flowing the moment a feed is connected (W0→W1).
 
 ## v0.3 — Instrument choice, honest horizon σ, ranking (decision record)
 
@@ -338,8 +404,12 @@ They validate code paths, never market edges.
 - Unit discipline: aggregates are Σ(per-position % of notional) over N positions —
   always reported alongside the per-position mean, never misread as per-cycle.
 - The mock feed exists so the machinery is exercised and reviewable **before**
-  any real data arrives (W1). When real RFQ quotes exist, a `WintermuteFeed`
+  any real data arrives (W1). When real RFQ quotes exist, a real feed class
   implements the same interface and the strategy code does not change.
+- **W0 addendum (v0.6):** the raw RFQ journal's synthetic records are *test
+  fixtures*, never evidence — the source wall (`real` | `synthetic`) is enforced
+  in code on ingest, in aggregation, and in the CLI; research-eligible statistics
+  are computed over `real` records only, always reported source-split.
 
 ## What is deliberately NOT here
 

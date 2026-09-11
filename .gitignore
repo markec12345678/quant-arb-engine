@@ -3,3 +3,9 @@ __pycache__/
 .venv/
 .DS_Store
 .scratch/
+# W0: the REAL raw RFQ journal is gitignored by design — raw desk data may be
+# proprietary and unbounded in size. The deterministic synthetic smoke journal
+# (journal-synthetic-smoke.jsonl) IS tracked so the machinery is reviewable.
+research/artifacts/rfq/journal.jsonl
+research/artifacts/rfq/journal.jsonl.lock
+research/artifacts/rfq/*.lock
