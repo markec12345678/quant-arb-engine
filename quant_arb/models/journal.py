@@ -14,6 +14,7 @@ I-3 signed PnL only           I-6 requested vs executed distinct fields
 from __future__ import annotations
 
 import json
+import math
 import time
 import uuid
 from typing import Any, Dict, List
@@ -24,6 +25,8 @@ RECORD_TYPES = (
     "run_header",
     "quote",
     "opportunity",
+    "family_eval",          # v0.3.0 (decision record C6): per-family ex-ante evaluation
+    "funding_daily",        # v0.3.0 (C6): the observation stream, journaled as source of truth
     "decision",
     "position_opened",
     "position_settled",
@@ -78,6 +81,38 @@ def validate_record(rec: Dict[str, Any]) -> None:
         if rtype == "position_opened":
             _require(p.get("settle_ts", 0) > 0, "SCHEMA", "position_opened requires settle_ts")
 
+    elif rtype == "family_eval":
+        # v0.3.0 (C6): the full ex-ante decision audit — every family, every
+        # quote day, gated or not. Nothing is silently dropped.
+        _require(isinstance(p.get("strategy_id"), str) and p.get("strategy_id"),
+                 "SCHEMA", "family_eval requires a non-empty strategy_id")
+        _require(isinstance(p.get("day"), int) and p["day"] > 0,
+                 "SCHEMA", "family_eval requires day (int > 0)")
+        _require(isinstance(p.get("gated"), bool), "SCHEMA", "family_eval gated must be bool")
+        _require(isinstance(p.get("selected"), bool), "SCHEMA", "family_eval selected must be bool")
+        _require(isinstance(p.get("gates"), dict)
+                 and all(isinstance(v, bool) for v in p["gates"].values()),
+                 "SCHEMA", "family_eval gates must be a bool-valued dict")
+        for k in ("gross_edge_bps", "net_executable_edge_bps", "sigma_level_apr", "sigma_horizon_apr"):
+            v = p.get(k)
+            _require(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v),
+                     "SCHEMA", f"family_eval {k} must be a finite number")
+        sz = p.get("signal_z")
+        _require(sz is None or (isinstance(sz, (int, float)) and math.isfinite(sz)),
+                 "SCHEMA", "family_eval signal_z must be finite or null")
+        _require(isinstance(p.get("detail"), dict), "SCHEMA", "family_eval detail must be an object")
+
+    elif rtype == "funding_daily":
+        # v0.3.0 (C6): daily mean printed APR — signed by nature (funding can
+        # be negative); finite is the only shape requirement.
+        _require(isinstance(p.get("day"), int) and p["day"] > 0,
+                 "SCHEMA", "funding_daily requires day (int > 0)")
+        apr = p.get("apr_printed")
+        _require(isinstance(apr, (int, float)) and not isinstance(apr, bool) and math.isfinite(apr),
+                 "SCHEMA", "funding_daily apr_printed must be finite (funding is signed — may be negative)")
+        _require(isinstance(p.get("n_prints"), int) and p["n_prints"] >= 1,
+                 "SCHEMA", "funding_daily n_prints must be >= 1")
+
     elif rtype == "decision":
         _require(p.get("action") in ("open", "reject"), "SCHEMA", "decision action must be open|reject")
         _require(isinstance(p.get("reasons"), list), "SCHEMA", "decision requires reasons[]")
@@ -86,6 +121,13 @@ def validate_record(rec: Dict[str, Any]) -> None:
         _require("signed_pnl_usd" in p, "I-3", "settlement requires signed_pnl_usd")
         _require("abs_pnl_usd" not in p and "pnl_usd" not in p,
                  "I-3", "settlement must not carry unsigned/ambiguous pnl field names")
+        fa = p.get("funding_accrual_usd")
+        _require("abs_funding_accrual_usd" not in p,
+                 "I-3", "funding accrual must be signed (no abs_ variant)")
+        _require(fa is None or (isinstance(fa, (int, float)) and math.isfinite(fa)),
+                 "I-3", "funding_accrual_usd must be a finite signed number")
+        _require(not (p.get("strategy_id") == "perp_carry_v1") or fa is not None,
+                 "I-3", "perp_carry_v1 settlements require funding_accrual_usd (the floating carry leg)")
         _require(p.get("quantity_chain_ok") is True, "I-5",
                  "settlement must verify the quantity chain quote→fill→settlement")
         _check_legs(p.get("entry_legs", []), "settled entry_legs")

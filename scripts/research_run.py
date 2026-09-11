@@ -50,8 +50,13 @@ def main() -> int:
     print(f"journal          : {out_path}")
     print(f"seed / days      : {summary['seed']} / {summary['days']} (tenor {summary['tenor_days']}d)")
     print(f"quotes journaled : {summary['quotes']}")
-    print(f"gated in         : {summary['opportunities_gated_in']} "
-          f"(risk rejects: {summary['risk_rejects']})")
+    print(f"family evals     : {summary['family_evals']} · gated-in family-days "
+          f"{summary['gated_in_family_days']} · contested {summary['contested_days']} · "
+          f"selected {summary['selected_days']} (risk rejects: {summary['risk_rejects']})")
+    fwd, perp = summary['per_family']['forward_basis_v1'], summary['per_family']['perp_carry_v1']
+    print(f"per family       : forward {fwd['gated_in']}/{fwd['evals']} gated · {fwd['selected']} selected · "
+          f"{fwd['opened']} opened | perp {perp['gated_in']}/{perp['evals']} gated · "
+          f"{perp['selected']} selected · {perp['opened']} opened")
     print(f"positions        : opened {summary['positions_opened']} · "
           f"settled {summary['positions_settled']} · still open {summary['positions_still_open']}")
     print("-" * 64)

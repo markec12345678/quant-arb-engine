@@ -5,7 +5,8 @@ parallel to the locked funding-arb baseline. **Paper / research only: it never
 submits an order, never holds capital, never talks to a live venue.**
 
 > Built 2026-09-11 per the recorded decision in
-> [`docs/decision-record-2026-09-11.md`](docs/decision-record-2026-09-11.md).
+> [`docs/decision-record-2026-09-11.md`](docs/decision-record-2026-09-11.md);
+> v0.3.0 per [`docs/decision-record-v0.3.0.md`](docs/decision-record-v0.3.0.md).
 > The measured system ([funding-arb](https://github.com/markec12345678/funding-arb)
 > @ `0373f5d`) stays untouched and keeps collecting Phase-2 A/B/C evidence:
 > **the old system measures reality; this engine explores the next generation.**
@@ -32,15 +33,17 @@ every module here:
 ## Architecture
 
 ```
-                    QUANT ARB ENGINE
+                    QUANT ARB ENGINE  (v0.3 — two families + ranking)
                            │
              ┌─────────────┼─────────────┐
              ↓             ↓             ↓
-          Funding        Basis        Forward     ← strategies (Funding Arb
-           Arb            Arb           Arb         ported later; Forward Basis
-             │             │             │           implemented now, mock feed)
+        Forward Basis   Perp Carry    Funding Arb   ← strategy families
+        (lock carry)    (float carry)  (port later)    (universal shape)
+             │             │             │
              └─────────────┼─────────────┘
                            ↓
+                    RANKING LAYER          ← both evaluated every quote day;
+                           ↓                 execute the higher net edge
                     ALL-IN EDGE            ← gross − entry − exit − slippage
                            ↓                 − carry uncertainty − exec risk
                     RISK ENGINE            ← caps: notional / tenor / open count
@@ -57,16 +60,17 @@ Module map:
 | `quant_arb/models/market_data.py` | `Venue`-agnostic primitives: `Instrument`, `Price` (**value + source + ts — never a naked number, I-1**), `FundingObservation` (hour-normalized), `RFQQuote` (fee model fully embedded in the quoted price, I-4) |
 | `quant_arb/models/opportunity.py` | **Universal opportunity model** — legs with direction, executable entry/exit, requested **and** executed size (I-2/I-6), carry estimate, edge, confidence |
 | `quant_arb/models/journal.py` | Append-only JSONL event journal with **write-time invariant enforcement** (I-1…I-6) |
-| `quant_arb/edge/carry.py` | Implied-carry math: EWMA funding APR + estimator σ, forward-implied APR, gap z-score |
-| `quant_arb/edge/all_in_edge.py` | **ALL-IN EDGE waterfall** — every subtraction explicit, nothing folded into gross (I-4) |
-| `quant_arb/feeds/mock_rfq.py` | Deterministic synthetic world (seeded): CEX funding prints + OTC desk spot/forward RFQ quotes. **SYNTHETIC — research only** |
-| `quant_arb/strategies/forward_basis.py` | **Route B** (primary research direction): implied carry (CEX funding) vs priced forward premium → gated ALL-IN EDGE → paper signal |
+| `quant_arb/edge/carry.py` | Implied-carry math: **two sigmas with two meanings** — `ewma_funding` → σ_level (instantaneous estimator error), `horizon_sigma_apr` → σ_H (empirical dispersion of H-day window means, overlapping windows, deterministic); forward-implied APR; gap z-score |
+| `quant_arb/edge/all_in_edge.py` | **ALL-IN EDGE waterfall** — every subtraction explicit, nothing folded into gross (I-4). Two waterfalls: `evaluate_forward_basis` (locked premium) and `evaluate_perp_carry` (floating carry, explicit CEX cost lines) |
+| `quant_arb/feeds/mock_rfq.py` | Deterministic synthetic world **v2** (seeded): CEX funding prints + OTC desk spot/forward RFQ quotes + perp mark; regime ramps **and collapses**. **SYNTHETIC — research only** |
+| `quant_arb/strategies/forward_basis.py` | **Route B, family `forward_basis_v1`** (lock carry): long spot @ desk ask + short dated forward @ desk bid; gates on net edge (level z retired to diagnostic — decision record C4) |
+| `quant_arb/strategies/perp_carry.py` | **Family `perp_carry_v1`** (float carry): long spot @ desk ask + short CEX perp @ mark; floating funding accrual at settle; gates on net edge AND horizon persistence z_perp = E/σ_H ≥ 2 |
 | `quant_arb/risk/caps.py` | Research caps — per-position notional, tenor, open-position count; enumerated reject reasons |
-| `quant_arb/positions.py` | Paper position state machine: `OPEN → SETTLED`, **signed PnL only** (I-3) |
-| `quant_arb/pipeline.py` | Research run loop: feed → strategy → edge → risk → journal; summary with unit discipline |
+| `quant_arb/positions.py` | Paper position state machine: `OPEN → SETTLED`, **signed PnL only** (I-3); perp legs settle at mark + signed funding accrual |
+| `quant_arb/pipeline.py` | Research run loop: feed → **both families → ranking** → edge → risk → journal; `family_eval` + `funding_daily` journaling; summary with unit discipline |
 | `quant_arb/research/stats.py` | Pure-stdlib distribution helpers (mean, sample std, numpy-style linear percentiles) for sweep summaries — machinery diagnostics, never market evidence |
 | `scripts/research_run.py` | CLI entry point (single run) |
-| `scripts/research_sweep.py` | Multi-seed sweep CLI (v0.2); overwrites the stable `run-latest.json` / `sweep-latest.json` derived summaries for the tower |
+| `scripts/research_sweep.py` | Multi-seed sweep CLI (v0.3); overwrites the stable `run-latest.json` / `sweep-latest.json` derived summaries for the tower |
 
 ## Run the research demo (zero network, zero capital)
 
@@ -78,7 +82,57 @@ python3 scripts/research_run.py --days 120 --seed 3 --tenor 60
 Writes an append-only journal to `research/artifacts/run_<ts>.jsonl` and prints a
 summary. Requires Python ≥ 3.10, **stdlib only — no dependencies.**
 
-## Research layer (v0.2)
+## v0.3 — Instrument choice, honest horizon σ, ranking (decision record)
+
+v0.2.0's two honest findings drove v0.3.0 (full reasoning in
+[`docs/decision-record-v0.3.0.md`](docs/decision-record-v0.3.0.md), written
+**before** any v0.3 run):
+
+1. **The z-gate calibration was reading σ_level as if it were a horizon
+   statement** (98.7 % breach vs 4.55 % nominal). v0.3 defines σ_H
+   (`horizon_sigma_apr`: overlapping-window dispersion, deterministic) and
+   journals both sigmas apart — the artifact now carries **two calibration
+   panels**, the level one kept for audit.
+2. **The world was one-sided** (carry only ramped up), so the instrument
+   question never existed. World v2 ramps 8 % → 18 % **and then collapses
+   18 % → 4 %** (days 150–180): the regime where a dated forward locking a
+   stale-high premium can beat floating on a short perp.
+
+New machinery:
+
+- **Second family `perp_carry_v1`** — long spot @ desk ask + short CEX perp
+  @ mark: the floating twin of Route B, with explicit CEX cost lines
+  (taker fee + half-spread) in its waterfall and signed printed-funding
+  accrual at settle.
+- **Ranking layer (C5)** — every quote day both families are evaluated and
+  journaled (`family_eval`, gated or not — full decision audit); among
+  gated-in families the higher net executable edge is executed, tie →
+  forward.
+- **`funding_daily`** — the observation stream is journaled itself, so every
+  research metric is re-derived from the journal alone.
+
+40-seed sweep results (SYNTHETIC diagnostics, machinery validation only):
+
+- ranking **hit-rate 60.2 %** on 791 full-window contested days (contested =
+  both families gated in — 99.4 % of quote days in this world, which
+  **refuted** prediction P3 "contests are a minority": interesting finding,
+  reported as measured);
+- **P2 supported**: forward selected 30.2 % of ramp-phase contests vs
+  79.5 % of collapse-phase contests — the ranking flips with the regime
+  exactly as the lag model predicts;
+- **P1 supported**: σ_H panel breach 35.0 % vs σ_level 67.1 % (pooled) —
+  halved and below the pre-registered 50 % rejection bar, still honestly
+  above the 4.55 % nominal (iid-block scaling underestimates
+  autocorrelated regime drift — a documented limitation, not a tuned number);
+- per-family settled: forward n=182, mean +2.03 % (realized − locked
+  −3.1 bps — the lock still holds through settlement); perp n=98, mean
+  +3.32 % (accrual − expected +36.9 bps — floating carry beat its ex-ante
+  estimate in the build-up world).
+
+Interpretation RULE (unchanged): machinery diagnostics on a synthetic world.
+They validate code paths, never market edges.
+
+## Research layer (v0.2 → v0.3)
 
 Multi-seed sweep on top of the single-run pipeline — the machinery-validation
 layer:
@@ -93,11 +147,13 @@ Runs the full pipeline per seed (one invariant-enforced journal per seed under
 **stable artifact files**, consumed read-only by the tower dashboard:
 
 - `research/artifacts/run-latest.json` — the representative seed (default 7):
-  the exact pipeline summary, every settled position with lock diagnostics, and
-  the last journaled opportunity payload.
-- `research/artifacts/sweep-latest.json` — cross-seed aggregates: totals, gate
-  fire rate, reject-reason census, pooled settled stats, z-gate calibration,
-  per-seed rows.
+  the exact pipeline summary, every settled position with lock/accrual
+  diagnostics, the last journaled opportunity payload, the **carry curve**
+  (daily printed APR) and the **per-day family edge series** (net edge of
+  both families + who was selected).
+- `research/artifacts/sweep-latest.json` — cross-seed aggregates: totals,
+  family census, **ranking hit-rate**, **dual z-gate calibration panels**, reject-reason
+  census, pooled settled stats, **scored predictions P1/P2/P3**, per-seed rows.
 
 The two `-latest.json` files are **derived summaries** (plain JSON, not
 journal-managed); the append-only invariant-enforced journals remain the source
@@ -105,10 +161,15 @@ of truth. Runs are deterministic — seeds are explicit, never time-based.
 
 What the stats MEAN:
 
-- **gate_fire_rate_pct** — share of quoting days on which the pre-registered
-  gates fired (z ≥ 2 AND net edge ≥ 10 bps). On the synthetic ramp the desk
-  lags the funding regime *by construction*, so this is high by design of the
-  mock world — it measures world construction, not strategy selectivity.
+- **selection / contested / hit-rate** — selection = quote days where some
+  family gated in and was chosen; contested = both gated in (a genuine
+  contest); hit-rate = share of full-window contests where the SELECTED
+  family's ex-post carry beat the forgone family's (forward = desk-implied
+  APR at entry; perp = realized mean printed APR over the window).
+- **family_census** — per family: evals / gated_in / selected / opened /
+  settled + settled distributions (`realized_minus_locked_bps` for the
+  forward, `funding_accrual_bps` and `realized_minus_expected_bps` for the
+  perp).
 - **reject_reasons** — census of risk-cap rejects across all journals; the
   open-position concentration cap dominates, as the single-run demo predicts.
 - **settled_stats.pnl_pct_of_notional** — distribution of realized signed PnL
@@ -121,16 +182,15 @@ What the stats MEAN:
   unwind (3 bps on exit notional), while the waterfall books the conservative
   pre-registered `exit_cost_bps = 8` buffer ex ante. A tight, small-negative
   distribution means the lock machinery works.
-- **locked_minus_perp_alt_apr_bps** — locked premium APR vs the perp funding
-  alternative over the same window (opportunity cost, synthetic).
-- **z_gate_calibration** — honesty check of the estimator σ: if the EWMA
-  estimator σ were an honest uncertainty for the held window, ≈ 4.55%
-  (2σ two-sided) of settled entries would breach
-  `|realized window APR − ex-ante EWMA APR| > 2σ`. The empirical rate is
-  reported AS COMPUTED and never tuned. (On the synthetic ramp it is very
-  high: the estimator σ measures *instantaneous* estimation error, not
-  horizon uncertainty — regime drift over the 90-day window dominates. That is
-  a property of the σ's meaning, and knowing it is the point of the check.)
+- **z_gate_calibration (dual panel)** — honesty checks of the two sigmas. If
+  σ were an honest uncertainty for the held window, ≈ 4.55 % (2σ two-sided)
+  of settled entries would breach `|window-mean APR − ex-ante APR| > 2σ`.
+  The **level panel** reproduces the v0.2.0 finding (estimator standard error
+  is NOT a horizon statement — kept for audit). The **horizon panel** is the
+  redefined diagnostic on σ_H; both are reported AS COMPUTED and never tuned.
+- **predictions P1/P2/P3** — the falsifiable statements written in the decision
+  record BEFORE the runs, scored by the sweep as measured (verdicts included
+  in the artifact; refuted predictions are reported, never buried).
 
 Interpretation RULE: these are machinery diagnostics on a synthetic world.
 They validate code paths, never market edges.

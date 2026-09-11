@@ -22,39 +22,53 @@ transfer is **conceptual knowledge** (schemas, invariants, lessons).
 | `models/market_data.py` | `Price = value + PriceSource + ts` (I-1). `FundingObservation` normalizes per-interval rates to hourly/annualized. `RFQQuote` embeds the entire fee model in the quoted price; `all_in_cost_bps` is the crossing cost vs `ref_mid`, counted once (I-4). |
 | `models/opportunity.py` | The universal shape every strategy emits: executable legs (direction, qty, fill price), `requested_size_usd` **and** `executed_size_usd = qty × px` (I-2/I-6), carry estimate (locked vs estimated + σ), edge numbers, horizon, confidence. |
 | `models/journal.py` | Append-only JSONL. `validate_record()` runs **before** every write: I-1 price source, I-2 executed notional, I-3 signed-only PnL field names, I-5 quantity chain flag, I-6 both size fields, canonical epistemic note + unit fields on summaries. Violations raise `JournalInvariantError`; nothing invalid is ever persisted. |
-| `edge/carry.py` | `ewma_funding(obs, half_life_h) → (apr, σ_apr)` — the σ is the estimator's standard error (std/√eff_n), not funding vol. `forward_implied_apr`, `carry_gap_z` (gap over √(σ_realized² + σ_desk²)). |
-| `edge/all_in_edge.py` | The waterfall: `gross − entry − exit − slippage − carry_uncertainty − execution_risk = net_executable_edge`. Each line explicit and journaled. `EdgeParams` holds the **pre-registered gates** (`min_net_edge_bps=10`, `min_z=2.0`). |
-| `feeds/mock_rfq.py` | Deterministic seeded world: spot GBM; funding APR as OU around a regime-dependent mean; noisy 8h funding prints; a desk that prices forwards off a *slow* EWMA of observed funding + quote noise. `SYNTHETIC_MOCK` price source everywhere (I-1 honesty). |
-| `strategies/*` | `Strategy.scan(ctx, size, tenor) → [Opportunity]`. Implemented: `ForwardBasisStrategy` (Route B). Planned: funding-arb port, spot/perp basis — same interface. |
+| `edge/carry.py` | **Two sigmas, two meanings (v0.3)**: `ewma_funding(obs, h) → (apr, σ_level)` — estimator standard error (std/√eff_n), the uncertainty of "what funding pays NOW"; `horizon_sigma_apr(obs, H) → (σ_H, diag)` — empirical dispersion of H-day window means (daily print aggregation → overlapping L-day windows → iid-block scaling; deterministic, no RNG; diagnostics journaled with every use). Also `forward_implied_apr`, `carry_gap_z`, `daily_printed_aprs`. |
+| `edge/all_in_edge.py` | The waterfall: `gross − entry − exit − slippage − carry_uncertainty − execution_risk = net_executable_edge`. Each line explicit and journaled. Two evaluators: `evaluate_forward_basis` (carry buffer from σ_level — carry is locked, only benchmark/early-exit risk) and `evaluate_perp_carry` (carry buffer from σ_H — funding floats, horizon risk is real; entry adds EXPLICIT CEX lines: taker fee + half-spread). `EdgeParams` holds the **pre-registered gates** (`min_net_edge_bps=10`, `min_z=2.0`, `perp_taker_fee_bps=5`, `perp_half_spread_bps=1`). |
+| `feeds/mock_rfq.py` | Deterministic seeded **world v2**: spot GBM; funding APR as OU around a regime mean that ramps 8 % → 18 % (days 30–120), holds, then COLLAPSES 18 % → 4 % (days 150–180); noisy 8h funding prints; a desk that prices forwards off a *slow* EWMA of observed funding + quote noise; `perp_mark()` (PERP_MARK source) and `printed_funding_between(ts_from, ts_to)` for accrual. `SYNTHETIC_MOCK` price source everywhere (I-1 honesty). |
+| `strategies/*` | `Strategy.evaluate(ctx, size, tenor) → FamilyEvaluation` (gates, edges, BOTH sigmas, signal_z, detail — journaled for every family every quote day) + `scan(...) → [Opportunity]`. Implemented: `ForwardBasisStrategy` (Route B, lock carry; net-edge gate, level z kept as diagnostic) and `PerpCarryStrategy` (float carry; net-edge gate AND horizon persistence z_perp = E/σ_H ≥ min_z, fail-closed when σ_H = 0). Planned: funding-arb port — same interface. |
 | `risk/caps.py` | `check(opp, open_count, caps) → (ok, reasons[])` — every reject is enumerated and journaled. Research placeholders until W0 returns real desk terms. |
-| `positions.py` | `PaperPosition`: OPEN → SETTLED. Settle computes per-leg **signed** PnL `(exit − entry) × qty × direction` (I-3), verifies exit ts > entry ts (I-5), and returns the ex-ante vs realized comparison payload. |
-| `pipeline.py` | The run loop: advance day → settle matured → (every N days) journal quotes → scan → risk-gate → open. Summary enforces the unit rule (aggregate Σ% vs mean per position) and the epistemic note. The settle payload's `research_compare` carries, since v0.2.0, the ex-ante estimator state (`ex_ante_apr`, `ex_ante_sigma_apr`) next to the realized comparison — added keys only, backwards-compatible. |
+| `positions.py` | `PaperPosition`: OPEN → SETTLED. Settle computes per-leg **signed** PnL `(exit − entry) × qty × direction` (I-3) — forward legs at the settlement print, perp legs at the exit mark, spot at the desk bid — verifies exit ts > entry ts (I-5), adds the signed `funding_accrual_usd` (perp family: Σ printed rates × qty × entry ref mid, a documented approximation) and returns the ex-ante vs realized comparison payload. |
+| `pipeline.py` | The run loop: advance day → journal `funding_daily` (the observation stream — source of truth for every research re-derivation) → settle matured → (every N days) journal quotes → **evaluate BOTH families → journal `family_eval` (with selection known) → ranking (higher net edge wins, tie → forward, pre-registered) → scan winner → risk-gate → open**. Summary enforces the unit rule (aggregate Σ % vs mean per position) and the epistemic note; `research_compare` carries the ex-ante estimator state (ap, σ_level, σ_H). |
 | `research/stats.py` | Pure-stdlib distribution helpers (`mean`, sample std, numpy-style linear percentiles, `dist_obj`). Machinery diagnostics on a synthetic world — never market evidence. |
 
-## Data flow (forward basis, current)
+## Data flow (two families + ranking, v0.3)
 
 ```
-mock CEX funding prints ──► EWMA (apr, σ) ──┐
-                                             ├─► gap z-score ──► gate z ≥ 2
-desk forward RFQ quote ──► implied APR ─────┘
-                                             │
-spot RFQ + fwd RFQ ──► ALL-IN EDGE waterfall ──► gate net ≥ 10bps
-                                             │
-                       risk caps (notional/tenor/open-count) ──► open paper position
-                                             │
-                       settle at expiry: signed PnL per leg + research compare
-                       (locked premium vs realized funding path vs perp alternative)
+mock CEX funding prints ──► EWMA (apr, σ_level) ──┐
+         │                                         ├─► level z (diagnostic only)
+         └──► horizon σ_H (overlapping windows) ──┘
+                                                   
+desk forward RFQ ──► implied APR ──► forward_basis_v1 ── net-edge gate
+CEX perp mark ────────────────────► perp_carry_v1 ───── net-edge gate AND z_perp = E/σ_H ≥ 2
+                                                   
+        BOTH families evaluated + journaled EVERY quote day (family_eval)
+                   ↓
+        RANKING: execute the higher net executable edge (tie → forward)
+                   ↓
+        risk caps (notional/tenor/open-count) ──► open paper position
+                   ↓
+        settle at expiry: signed PnL per leg (+ signed funding accrual for perp)
+        research compare: locked premium vs realized funding path + ex-ante state
 ```
 
-## The synthetic regime (why the demo shows what it shows)
+## The synthetic regime v2 (why the demo shows what it shows)
 
-`_uptrend_then_flat`: funding APR mean ramps 8% → 18% between day 30 and 120,
-then flat. The desk's slow (30-day half-life) pricing lags the ramp → the gap
-opens (z ≥ 2, net edge viable) → gated entries. In the flat regime the desk
-catches up → gap closes → rejections. Sample run (seed 7, 200 days, 90d tenor):
-152 quotes → 16 gated opportunities → 10 risk rejects (open-position cap) →
-6 opened → 3 settled (+$7,878 synthetic) with realized ≈ locked premium minus
-exit spread, which is exactly what a dated forward must do.
+`_world_v2_regime`: funding APR mean ramps 8 % → 18 % between days 30–120,
+flat to day 150, **collapses 18 % → 4 % over days 150–180**, flat 4 % after.
+The desk's slow (30-day half-life) pricing lags both turns:
+
+- during the build-up the desk under-prices carry → the floating perp family
+  has the higher net edge → ranking selects `perp_carry_v1` (30.2 % of
+  ramp-phase contests went to the forward);
+- during/after the collapse the desk's stale-high premiums become the trade →
+  the dated forward wins the ranking (79.5 % of collapse-phase contests).
+
+Sample run (seed 7, 200 days, 90d tenor): 152 quotes → 76 family evals →
+37 contested days → 38 selected (14 forward / 24 perp) → 26 risk rejects
+(open-position cap) → 12 opened → 7 settled (+$15,986 synthetic) with the
+forward lock still holding through settlement (realized − locked ≈ −exit
+cost) and the perp positions settling on printed funding accrual — exactly
+what each instrument must do.
 
 **The synthetic numbers validate the machinery, not any market.** Changing the
 seed changes the numbers; the invariants do not change.
@@ -62,25 +76,25 @@ seed changes the numbers; the invariants do not change.
 ## Extension points (in order of arrival)
 
 1. **W1 real feed** — `WintermuteFeed` (or a journal-replayer of W1 RFQ quotes)
-   implementing `funding_obs / spot_quotes / forward_quote` with
+   implementing `funding_obs / spot_quotes / forward_quote / perp_mark` with
    `PriceSource.DESK_RFQ_QUOTE`. Strategy code unchanged. **Unchanged by
-   v0.2.0** — the research layer reads journals only; a real feed still
+   v0.3.0** — the research layer reads journals only; a real feed still
    implements the same feed surface and swaps in behind the existing
    interface.
 2. **Funding-arb port** — the locked system's scanner semantics become a
-   second `Strategy` emitting the same `Opportunity` shape; its venue
+   third `Strategy` emitting the same `Opportunity` shape; its venue
    tickers/funding map onto `Price`/`FundingObservation` with honest sources.
-3. **Research layer** — **EXISTS (v0.2.0)**: `scripts/research_sweep.py`
+3. **Research layer** — **EXISTS (v0.2.0 → v0.3.0)**: `scripts/research_sweep.py`
    runs the deterministic pipeline across seeds 1..40 (one invariant-enforced
    journal per seed under `research/artifacts/sweep_runs/`) and overwrites
-   two stable artifacts — `research/artifacts/run-latest.json`
-   (representative seed, full detail) and
-   `research/artifacts/sweep-latest.json` (pooled machinery-validation
-   stats: realized-vs-locked, z-gate calibration, gate fire rate, reject
-   census, per-seed rows). The tower dashboard consumes both **read-only**;
-   they are derived summaries, not journal-managed records — the journals
-   stay the source of truth. Next in this lane: carry curves, gap
-   persistence, quote-cost distributions, opportunity ranking.
+   two stable artifacts — `run-latest.json` (representative seed: summary,
+   settled rows, opportunity example, carry curve, family edge series) and
+   `sweep-latest.json` (totals, family census, ranking hit-rate, dual
+   z-gate calibration panels, scored predictions P1/P2/P3, reject census,
+   per-seed rows). The tower dashboard consumes both **read-only**; they are
+   derived summaries, not journal-managed records — the journals stay the
+   source of truth. Next in this lane: quote-cost distributions, ranking
+   features beyond net edge (σ-adjusted), W1 feed replay.
 4. **Execution abstraction** — RFQ lifecycle state machine (quote → accept →
    fill → settle) with fail-closed transitions, patterned on phase3-lab's
    certified separation (only after W2/W3 decisions).

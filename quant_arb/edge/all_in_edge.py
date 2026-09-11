@@ -27,6 +27,11 @@ class EdgeParams:
     execution_risk_buffer_bps: float = 5.0  # research estimate (quote TTL, partial fills)
     min_net_edge_bps: float = 10.0        # W2-style pre-registered viability gate
     min_z: float = 2.0                    # statistical persistence gate
+    # v0.3.0 (decision record C4) — explicit CEX cost model for perp legs.
+    # Unlike RFQ legs (I-4: fees embedded in the quoted price), CEX legs charge
+    # taker fees on top of the book price — counted here exactly once per crossing.
+    perp_taker_fee_bps: float = 5.0       # CEX perp taker fee per crossing (research est.)
+    perp_half_spread_bps: float = 1.0     # CEX perp book half-spread (research est.)
 
 
 @dataclass(frozen=True)
@@ -73,6 +78,35 @@ def evaluate_forward_basis(*, fwd_mid: float, spot_mid: float, spot_ask: float, 
     gross = (fwd_mid - spot_mid) / spot_mid * 1e4
     entry = (spot_ask - spot_mid) / spot_mid * 1e4 + (fwd_mid - fwd_bid) / fwd_mid * 1e4
     carry_buf = params.carry_uncertainty_k * realized_sigma_apr * tenor_days / 365.0 * 1e4
+    return EdgeWaterfall(
+        gross_edge_bps=gross,
+        entry_cost_bps=entry,
+        exit_cost_bps=params.exit_cost_bps,
+        carry_uncertainty_buffer_bps=carry_buf,
+        slippage_buffer_bps=params.slippage_buffer_bps,
+        execution_risk_buffer_bps=params.execution_risk_buffer_bps,
+    )
+
+
+def evaluate_perp_carry(*, spot_mid: float, spot_ask: float, expected_apr: float,
+                        horizon_sigma_apr: float, tenor_days: float,
+                        params: EdgeParams) -> EdgeWaterfall:
+    """Waterfall for a long-spot + short-perp floating carry (v0.3.0, family
+    ``perp_carry_v1``).
+
+    gross  = expected funding APR · tenor/365          — the FLOATING carry, ex-ante
+    entry  = spot desk ask crossing + perp taker fee + perp half-spread (explicit
+             CEX cost lines — a CEX leg is not an RFQ; its fees sit on top of the
+             book price, so they are counted here exactly once per crossing)
+    carry buffer = k · σ_H · tenor/365                 — HORIZON σ: the funding floats,
+             so the dispersion of the window mean is genuine PnL risk (C2/C3)
+    """
+    if min(spot_mid, spot_ask) <= 0 or tenor_days <= 0:
+        raise ValueError("prices and tenor must be positive")
+    gross = expected_apr * tenor_days / 365.0 * 1e4
+    entry = ((spot_ask - spot_mid) / spot_mid * 1e4
+             + params.perp_taker_fee_bps + params.perp_half_spread_bps)
+    carry_buf = params.carry_uncertainty_k * horizon_sigma_apr * tenor_days / 365.0 * 1e4
     return EdgeWaterfall(
         gross_edge_bps=gross,
         entry_cost_bps=entry,

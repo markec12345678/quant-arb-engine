@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-09-11T15:47:46Z",
-  "engine_version": "0.2.0",
-  "run_id": "09953ba16559",
+  "generated_at": "2026-09-11T17:41:12Z",
+  "engine_version": "0.3.0",
+  "run_id": "f38b0be27424",
   "journal_path": "research/artifacts/sweep_runs/run_seed_0007.jsonl",
   "summary": {
     "synthetic": true,
@@ -9,139 +9,1285 @@
     "days": 200,
     "tenor_days": 90,
     "quotes": 152,
-    "opportunities_gated_in": 16,
-    "risk_rejects": 10,
-    "positions_opened": 6,
-    "positions_settled": 3,
-    "positions_still_open": 3,
-    "realized_signed_pnl_usd": 7878.41,
-    "aggregate_pct_of_notional": 7.8784,
-    "mean_per_position_pct": 2.6261,
-    "ex_ante_net_edge_mean_pct": 2.3097,
+    "quote_events": 38,
+    "family_evals": 76,
+    "gated_in_family_days": 75,
+    "contested_days": 37,
+    "selected_days": 38,
+    "risk_rejects": 26,
+    "positions_opened": 12,
+    "positions_settled": 7,
+    "positions_still_open": 5,
+    "per_family": {
+      "forward_basis_v1": {
+        "evals": 38,
+        "gated_in": 38,
+        "selected": 14,
+        "opened": 7,
+        "settled": 5
+      },
+      "perp_carry_v1": {
+        "evals": 38,
+        "gated_in": 37,
+        "selected": 24,
+        "opened": 5,
+        "settled": 2
+      }
+    },
+    "realized_signed_pnl_usd": 15986.47,
+    "aggregate_pct_of_notional": 15.9865,
+    "mean_per_position_pct": 2.2838,
+    "ex_ante_net_edge_mean_pct": 1.8229,
     "unit_rule": "aggregate = \u03a3(per-position % of notional) over settled positions; mean = aggregate / N. Never read the aggregate as per-cycle.",
     "epistemic_note": "SYNTHETIC/paper diagnostic only \u2014 on the current sample and reconstruction there is no proof of a positive edge. Never read as a real-trading forecast."
   },
   "settled": [
     {
-      "position_id": "PP-0085-001",
+      "position_id": "PP-0015-001",
       "strategy_id": "forward_basis_v1",
-      "opened_day": 85,
-      "settle_day": 175,
+      "opened_day": 15,
+      "settle_day": 105,
       "held_days": 90,
-      "signed_pnl_usd": 2262.641142,
-      "pnl_pct_of_notional": 2.262641,
-      "ex_ante_net_edge_bps": 195.5898,
-      "ex_ante_gross_edge_bps": 237.8961,
-      "locked_premium_usd": 2287.533892,
-      "locked_premium_bps": 228.7534,
-      "realized_minus_locked_bps": -2.4893,
-      "perp_alternative_apr": 0.166521,
-      "locked_premium_apr": 0.092772,
+      "signed_pnl_usd": 1470.903046,
+      "pnl_pct_of_notional": 1.470903,
+      "ex_ante_net_edge_bps": 110.9372,
+      "ex_ante_gross_edge_bps": 161.2457,
+      "locked_premium_usd": 1521.489355,
+      "locked_premium_bps": 152.1489,
+      "realized_minus_locked_bps": -5.0586,
+      "locked_premium_apr": 0.061705,
+      "funding_accrual_usd": null,
+      "funding_accrual_bps": null,
+      "realized_minus_expected_bps": null,
+      "perp_alternative_apr": 0.103917,
       "quantity_chain_ok": true
     },
     {
-      "position_id": "PP-0105-002",
+      "position_id": "PP-0020-002",
       "strategy_id": "forward_basis_v1",
+      "opened_day": 20,
+      "settle_day": 110,
+      "held_days": 90,
+      "signed_pnl_usd": 1778.385358,
+      "pnl_pct_of_notional": 1.778385,
+      "ex_ante_net_edge_bps": 144.1305,
+      "ex_ante_gross_edge_bps": 191.4128,
+      "locked_premium_usd": 1822.979886,
+      "locked_premium_bps": 182.298,
+      "realized_minus_locked_bps": -4.4595,
+      "locked_premium_apr": 0.073932,
+      "funding_accrual_usd": null,
+      "funding_accrual_bps": null,
+      "realized_minus_expected_bps": null,
+      "perp_alternative_apr": 0.108517,
+      "quantity_chain_ok": true
+    },
+    {
+      "position_id": "PP-0025-003",
+      "strategy_id": "forward_basis_v1",
+      "opened_day": 25,
+      "settle_day": 115,
+      "held_days": 90,
+      "signed_pnl_usd": 1856.985488,
+      "pnl_pct_of_notional": 1.856985,
+      "ex_ante_net_edge_bps": 154.4961,
+      "ex_ante_gross_edge_bps": 198.874,
+      "locked_premium_usd": 1897.54686,
+      "locked_premium_bps": 189.7547,
+      "realized_minus_locked_bps": -4.0561,
+      "locked_premium_apr": 0.076956,
+      "funding_accrual_usd": null,
+      "funding_accrual_bps": null,
+      "realized_minus_expected_bps": null,
+      "perp_alternative_apr": 0.112392,
+      "quantity_chain_ok": true
+    },
+    {
+      "position_id": "PP-0030-004",
+      "strategy_id": "forward_basis_v1",
+      "opened_day": 30,
+      "settle_day": 120,
+      "held_days": 90,
+      "signed_pnl_usd": 1980.92116,
+      "pnl_pct_of_notional": 1.980921,
+      "ex_ante_net_edge_bps": 167.7755,
+      "ex_ante_gross_edge_bps": 210.7511,
+      "locked_premium_usd": 2016.24674,
+      "locked_premium_bps": 201.6247,
+      "realized_minus_locked_bps": -3.5326,
+      "locked_premium_apr": 0.08177,
+      "funding_accrual_usd": null,
+      "funding_accrual_bps": null,
+      "realized_minus_expected_bps": null,
+      "perp_alternative_apr": 0.115771,
+      "quantity_chain_ok": true
+    },
+    {
+      "position_id": "PP-0035-005",
+      "strategy_id": "forward_basis_v1",
+      "opened_day": 35,
+      "settle_day": 125,
+      "held_days": 90,
+      "signed_pnl_usd": 1777.404676,
+      "pnl_pct_of_notional": 1.777405,
+      "ex_ante_net_edge_bps": 145.1151,
+      "ex_ante_gross_edge_bps": 190.1798,
+      "locked_premium_usd": 1810.656585,
+      "locked_premium_bps": 181.0657,
+      "realized_minus_locked_bps": -3.3252,
+      "locked_premium_apr": 0.073432,
+      "funding_accrual_usd": null,
+      "funding_accrual_bps": null,
+      "realized_minus_expected_bps": null,
+      "perp_alternative_apr": 0.122434,
+      "quantity_chain_ok": true
+    },
+    {
+      "position_id": "PP-0105-006",
+      "strategy_id": "perp_carry_v1",
       "opened_day": 105,
       "settle_day": 195,
       "held_days": 90,
-      "signed_pnl_usd": 2690.445716,
-      "pnl_pct_of_notional": 2.690446,
-      "ex_ante_net_edge_bps": 237.2404,
-      "ex_ante_gross_edge_bps": 281.219,
-      "locked_premium_usd": 2720.502677,
-      "locked_premium_bps": 272.0503,
-      "realized_minus_locked_bps": -3.0057,
-      "perp_alternative_apr": 0.175654,
-      "locked_premium_apr": 0.110331,
+      "signed_pnl_usd": 3618.862484,
+      "pnl_pct_of_notional": 3.618862,
+      "ex_ante_net_edge_bps": 260.5725,
+      "ex_ante_gross_edge_bps": 322.6308,
+      "locked_premium_usd": null,
+      "locked_premium_bps": null,
+      "realized_minus_locked_bps": null,
+      "locked_premium_apr": null,
+      "funding_accrual_usd": 3678.919444,
+      "funding_accrual_bps": 367.8919,
+      "realized_minus_expected_bps": 45.2604,
+      "perp_alternative_apr": 0.14898,
       "quantity_chain_ok": true
     },
     {
-      "position_id": "PP-0110-003",
-      "strategy_id": "forward_basis_v1",
+      "position_id": "PP-0110-007",
+      "strategy_id": "perp_carry_v1",
       "opened_day": 110,
       "settle_day": 200,
       "held_days": 90,
-      "signed_pnl_usd": 2925.326719,
-      "pnl_pct_of_notional": 2.925327,
-      "ex_ante_net_edge_bps": 260.0705,
-      "ex_ante_gross_edge_bps": 304.4577,
-      "locked_premium_usd": 2952.750287,
-      "locked_premium_bps": 295.275,
-      "realized_minus_locked_bps": -2.7424,
-      "perp_alternative_apr": 0.177645,
-      "locked_premium_apr": 0.11975,
+      "signed_pnl_usd": 3503.008562,
+      "pnl_pct_of_notional": 3.503009,
+      "ex_ante_net_edge_bps": 293.0341,
+      "ex_ante_gross_edge_bps": 357.9844,
+      "locked_premium_usd": null,
+      "locked_premium_bps": null,
+      "realized_minus_locked_bps": null,
+      "locked_premium_apr": null,
+      "funding_accrual_usd": 3560.43213,
+      "funding_accrual_bps": 356.0432,
+      "realized_minus_expected_bps": -1.9423,
+      "perp_alternative_apr": 0.144427,
       "quantity_chain_ok": true
     }
   ],
   "opportunity_example": {
     "carry": {
       "description": "locked forward premium over tenor; \u03c3 = benchmark/early-exit mark risk",
-      "expected_usd": 4000.31906,
+      "expected_usd": 2978.488384,
       "locked": true,
-      "sigma_usd": 178.888395
+      "sigma_usd": 194.209942
     },
-    "confidence": 0.6464,
-    "gross_edge_bps": 409.277489,
+    "confidence": 0.0,
+    "gross_edge_bps": 307.033057,
     "horizon_days": 90,
     "legs": [
       {
         "direction": 1,
-        "executed_size_usd": 100029.995743,
+        "executed_size_usd": 100030.000362,
         "instrument": "SYN",
         "kind": "spot",
         "px": {
           "source": "synthetic_mock",
-          "ts": 1783209600000,
-          "value": 147.5744570089548
+          "ts": 1784505600000,
+          "value": 153.4804375922913
         },
-        "qty": 677.8273,
+        "qty": 651.7443,
         "requested_size_usd": 100000.0,
         "venue": "SYNTH_DESK"
       },
       {
         "direction": -1,
-        "executed_size_usd": 104030.314803,
+        "executed_size_usd": 103008.488747,
         "instrument": "SYN-FWD-90D",
         "kind": "forward",
         "px": {
           "source": "synthetic_mock",
-          "ts": 1783209600000,
-          "value": 153.47613588757835
+          "ts": 1784505600000,
+          "value": 158.05046357367672
         },
-        "qty": 677.8273,
+        "qty": 651.7443,
         "requested_size_usd": 100000.0,
         "venue": "SYNTH_DESK"
       }
     ],
     "metadata": {
-      "forward_implied_apr": 0.165985,
-      "gap_apr": 0.020299,
+      "forward_implied_apr": 0.124519,
+      "gap_apr": -0.034275,
       "gates": {
-        "net_edge_gate": true,
-        "z_gate": true
+        "net_edge_gate": true
       },
       "price_sources": {
         "fwd_bid": "synthetic_mock",
         "ref_mid": "synthetic_mock",
         "spot_ask": "synthetic_mock"
       },
-      "realized_apr": 0.186284,
-      "realized_sigma_apr": 0.007255,
+      "ranked_over": [
+        "perp_carry_v1"
+      ],
+      "realized_apr": 0.090244,
+      "realized_sigma_apr": 0.007876,
+      "ref_mid": 153.43440727011028,
+      "sigma_horizon_apr": 0.022899,
+      "signal_z_level": -4.0666,
       "waterfall": {
-        "carry_uncertainty_buffer_bps": 17.8888,
+        "carry_uncertainty_buffer_bps": 19.421,
         "entry_cost_bps": 9.0,
         "execution_risk_buffer_bps": 5.0,
         "exit_cost_bps": 8.0,
-        "gross_edge_bps": 409.2775,
-        "net_executable_edge_bps": 366.3886,
+        "gross_edge_bps": 307.0331,
+        "net_executable_edge_bps": 262.6121,
         "slippage_buffer_bps": 3.0
       }
     },
-    "net_executable_edge_bps": 366.38865,
+    "net_executable_edge_bps": 262.612063,
     "requested_notional_usd": 100000.0,
-    "signal_z": 2.5857,
+    "signal_z": -4.0666,
     "strategy_id": "forward_basis_v1",
-    "ts": 1783209600000
-  }
+    "ts": 1784505600000
+  },
+  "carry_curve": [
+    {
+      "day": 1,
+      "apr_printed": 0.056802
+    },
+    {
+      "day": 2,
+      "apr_printed": 0.125612
+    },
+    {
+      "day": 3,
+      "apr_printed": 0.081646
+    },
+    {
+      "day": 4,
+      "apr_printed": 0.020689
+    },
+    {
+      "day": 5,
+      "apr_printed": 0.092703
+    },
+    {
+      "day": 6,
+      "apr_printed": 0.164738
+    },
+    {
+      "day": 7,
+      "apr_printed": 0.09122
+    },
+    {
+      "day": 8,
+      "apr_printed": 0.081595
+    },
+    {
+      "day": 9,
+      "apr_printed": 0.063306
+    },
+    {
+      "day": 10,
+      "apr_printed": 0.059995
+    },
+    {
+      "day": 11,
+      "apr_printed": 0.088335
+    },
+    {
+      "day": 12,
+      "apr_printed": 0.070761
+    },
+    {
+      "day": 13,
+      "apr_printed": 0.030329
+    },
+    {
+      "day": 14,
+      "apr_printed": 0.016593
+    },
+    {
+      "day": 15,
+      "apr_printed": 0.000658
+    },
+    {
+      "day": 16,
+      "apr_printed": 0.120232
+    },
+    {
+      "day": 17,
+      "apr_printed": 0.124449
+    },
+    {
+      "day": 18,
+      "apr_printed": 0.073928
+    },
+    {
+      "day": 19,
+      "apr_printed": 0.062009
+    },
+    {
+      "day": 20,
+      "apr_printed": 0.097038
+    },
+    {
+      "day": 21,
+      "apr_printed": 0.08049
+    },
+    {
+      "day": 22,
+      "apr_printed": 0.124298
+    },
+    {
+      "day": 23,
+      "apr_printed": 0.099955
+    },
+    {
+      "day": 24,
+      "apr_printed": 0.046244
+    },
+    {
+      "day": 25,
+      "apr_printed": 0.093365
+    },
+    {
+      "day": 26,
+      "apr_printed": 0.108401
+    },
+    {
+      "day": 27,
+      "apr_printed": 0.069642
+    },
+    {
+      "day": 28,
+      "apr_printed": 0.121341
+    },
+    {
+      "day": 29,
+      "apr_printed": 0.095286
+    },
+    {
+      "day": 30,
+      "apr_printed": 0.123515
+    },
+    {
+      "day": 31,
+      "apr_printed": 0.008942
+    },
+    {
+      "day": 32,
+      "apr_printed": 0.068484
+    },
+    {
+      "day": 33,
+      "apr_printed": 0.024033
+    },
+    {
+      "day": 34,
+      "apr_printed": 0.011324
+    },
+    {
+      "day": 35,
+      "apr_printed": 0.106194
+    },
+    {
+      "day": 36,
+      "apr_printed": 0.135721
+    },
+    {
+      "day": 37,
+      "apr_printed": 0.070137
+    },
+    {
+      "day": 38,
+      "apr_printed": 0.067108
+    },
+    {
+      "day": 39,
+      "apr_printed": 0.004039
+    },
+    {
+      "day": 40,
+      "apr_printed": 0.094199
+    },
+    {
+      "day": 41,
+      "apr_printed": 0.120534
+    },
+    {
+      "day": 42,
+      "apr_printed": 0.099963
+    },
+    {
+      "day": 43,
+      "apr_printed": 0.121022
+    },
+    {
+      "day": 44,
+      "apr_printed": 0.090635
+    },
+    {
+      "day": 45,
+      "apr_printed": 0.064349
+    },
+    {
+      "day": 46,
+      "apr_printed": 0.080156
+    },
+    {
+      "day": 47,
+      "apr_printed": 0.139306
+    },
+    {
+      "day": 48,
+      "apr_printed": 0.055275
+    },
+    {
+      "day": 49,
+      "apr_printed": 0.086791
+    },
+    {
+      "day": 50,
+      "apr_printed": 0.122398
+    },
+    {
+      "day": 51,
+      "apr_printed": 0.048466
+    },
+    {
+      "day": 52,
+      "apr_printed": 0.121255
+    },
+    {
+      "day": 53,
+      "apr_printed": 0.039117
+    },
+    {
+      "day": 54,
+      "apr_printed": 0.046158
+    },
+    {
+      "day": 55,
+      "apr_printed": 0.023967
+    },
+    {
+      "day": 56,
+      "apr_printed": 0.054392
+    },
+    {
+      "day": 57,
+      "apr_printed": 0.116387
+    },
+    {
+      "day": 58,
+      "apr_printed": 0.148611
+    },
+    {
+      "day": 59,
+      "apr_printed": 0.104681
+    },
+    {
+      "day": 60,
+      "apr_printed": 0.140055
+    },
+    {
+      "day": 61,
+      "apr_printed": 0.113211
+    },
+    {
+      "day": 62,
+      "apr_printed": 0.114734
+    },
+    {
+      "day": 63,
+      "apr_printed": 0.104036
+    },
+    {
+      "day": 64,
+      "apr_printed": 0.082749
+    },
+    {
+      "day": 65,
+      "apr_printed": 0.147415
+    },
+    {
+      "day": 66,
+      "apr_printed": 0.121363
+    },
+    {
+      "day": 67,
+      "apr_printed": 0.100423
+    },
+    {
+      "day": 68,
+      "apr_printed": 0.148014
+    },
+    {
+      "day": 69,
+      "apr_printed": 0.18324
+    },
+    {
+      "day": 70,
+      "apr_printed": 0.038791
+    },
+    {
+      "day": 71,
+      "apr_printed": 0.13615
+    },
+    {
+      "day": 72,
+      "apr_printed": 0.105803
+    },
+    {
+      "day": 73,
+      "apr_printed": 0.10686
+    },
+    {
+      "day": 74,
+      "apr_printed": 0.112184
+    },
+    {
+      "day": 75,
+      "apr_printed": 0.056529
+    },
+    {
+      "day": 76,
+      "apr_printed": 0.005146
+    },
+    {
+      "day": 77,
+      "apr_printed": 0.077724
+    },
+    {
+      "day": 78,
+      "apr_printed": 0.162487
+    },
+    {
+      "day": 79,
+      "apr_printed": 0.137017
+    },
+    {
+      "day": 80,
+      "apr_printed": 0.147852
+    },
+    {
+      "day": 81,
+      "apr_printed": 0.14305
+    },
+    {
+      "day": 82,
+      "apr_printed": 0.164569
+    },
+    {
+      "day": 83,
+      "apr_printed": 0.172603
+    },
+    {
+      "day": 84,
+      "apr_printed": 0.14142
+    },
+    {
+      "day": 85,
+      "apr_printed": 0.087743
+    },
+    {
+      "day": 86,
+      "apr_printed": 0.134727
+    },
+    {
+      "day": 87,
+      "apr_printed": 0.146113
+    },
+    {
+      "day": 88,
+      "apr_printed": 0.101794
+    },
+    {
+      "day": 89,
+      "apr_printed": 0.105128
+    },
+    {
+      "day": 90,
+      "apr_printed": 0.085279
+    },
+    {
+      "day": 91,
+      "apr_printed": 0.16084
+    },
+    {
+      "day": 92,
+      "apr_printed": 0.106156
+    },
+    {
+      "day": 93,
+      "apr_printed": 0.10126
+    },
+    {
+      "day": 94,
+      "apr_printed": 0.14026
+    },
+    {
+      "day": 95,
+      "apr_printed": 0.049802
+    },
+    {
+      "day": 96,
+      "apr_printed": 0.100997
+    },
+    {
+      "day": 97,
+      "apr_printed": 0.128107
+    },
+    {
+      "day": 98,
+      "apr_printed": 0.141862
+    },
+    {
+      "day": 99,
+      "apr_printed": 0.091167
+    },
+    {
+      "day": 100,
+      "apr_printed": 0.188175
+    },
+    {
+      "day": 101,
+      "apr_printed": 0.09393
+    },
+    {
+      "day": 102,
+      "apr_printed": 0.225898
+    },
+    {
+      "day": 103,
+      "apr_printed": 0.160982
+    },
+    {
+      "day": 104,
+      "apr_printed": 0.171176
+    },
+    {
+      "day": 105,
+      "apr_printed": 0.150816
+    },
+    {
+      "day": 106,
+      "apr_printed": 0.202606
+    },
+    {
+      "day": 107,
+      "apr_printed": 0.152025
+    },
+    {
+      "day": 108,
+      "apr_printed": 0.177889
+    },
+    {
+      "day": 109,
+      "apr_printed": 0.172746
+    },
+    {
+      "day": 110,
+      "apr_printed": 0.191481
+    },
+    {
+      "day": 111,
+      "apr_printed": 0.183473
+    },
+    {
+      "day": 112,
+      "apr_printed": 0.132095
+    },
+    {
+      "day": 113,
+      "apr_printed": 0.127033
+    },
+    {
+      "day": 114,
+      "apr_printed": 0.163834
+    },
+    {
+      "day": 115,
+      "apr_printed": 0.192281
+    },
+    {
+      "day": 116,
+      "apr_printed": 0.130623
+    },
+    {
+      "day": 117,
+      "apr_printed": 0.185441
+    },
+    {
+      "day": 118,
+      "apr_printed": 0.156032
+    },
+    {
+      "day": 119,
+      "apr_printed": 0.188135
+    },
+    {
+      "day": 120,
+      "apr_printed": 0.114608
+    },
+    {
+      "day": 121,
+      "apr_printed": 0.19443
+    },
+    {
+      "day": 122,
+      "apr_printed": 0.158931
+    },
+    {
+      "day": 123,
+      "apr_printed": 0.19774
+    },
+    {
+      "day": 124,
+      "apr_printed": 0.199687
+    },
+    {
+      "day": 125,
+      "apr_printed": 0.125291
+    },
+    {
+      "day": 126,
+      "apr_printed": 0.190296
+    },
+    {
+      "day": 127,
+      "apr_printed": 0.183825
+    },
+    {
+      "day": 128,
+      "apr_printed": 0.185108
+    },
+    {
+      "day": 129,
+      "apr_printed": 0.191615
+    },
+    {
+      "day": 130,
+      "apr_printed": 0.128839
+    },
+    {
+      "day": 131,
+      "apr_printed": 0.164452
+    },
+    {
+      "day": 132,
+      "apr_printed": 0.214822
+    },
+    {
+      "day": 133,
+      "apr_printed": 0.222434
+    },
+    {
+      "day": 134,
+      "apr_printed": 0.143018
+    },
+    {
+      "day": 135,
+      "apr_printed": 0.103424
+    },
+    {
+      "day": 136,
+      "apr_printed": 0.16152
+    },
+    {
+      "day": 137,
+      "apr_printed": 0.182975
+    },
+    {
+      "day": 138,
+      "apr_printed": 0.197563
+    },
+    {
+      "day": 139,
+      "apr_printed": 0.200479
+    },
+    {
+      "day": 140,
+      "apr_printed": 0.216637
+    },
+    {
+      "day": 141,
+      "apr_printed": 0.237917
+    },
+    {
+      "day": 142,
+      "apr_printed": 0.105708
+    },
+    {
+      "day": 143,
+      "apr_printed": 0.156808
+    },
+    {
+      "day": 144,
+      "apr_printed": 0.188773
+    },
+    {
+      "day": 145,
+      "apr_printed": 0.194945
+    },
+    {
+      "day": 146,
+      "apr_printed": 0.18414
+    },
+    {
+      "day": 147,
+      "apr_printed": 0.234417
+    },
+    {
+      "day": 148,
+      "apr_printed": 0.161119
+    },
+    {
+      "day": 149,
+      "apr_printed": 0.181418
+    },
+    {
+      "day": 150,
+      "apr_printed": 0.208183
+    },
+    {
+      "day": 151,
+      "apr_printed": 0.218998
+    },
+    {
+      "day": 152,
+      "apr_printed": 0.160507
+    },
+    {
+      "day": 153,
+      "apr_printed": 0.198146
+    },
+    {
+      "day": 154,
+      "apr_printed": 0.190417
+    },
+    {
+      "day": 155,
+      "apr_printed": 0.140528
+    },
+    {
+      "day": 156,
+      "apr_printed": 0.176116
+    },
+    {
+      "day": 157,
+      "apr_printed": 0.213264
+    },
+    {
+      "day": 158,
+      "apr_printed": 0.172551
+    },
+    {
+      "day": 159,
+      "apr_printed": 0.153018
+    },
+    {
+      "day": 160,
+      "apr_printed": 0.118703
+    },
+    {
+      "day": 161,
+      "apr_printed": 0.138243
+    },
+    {
+      "day": 162,
+      "apr_printed": 0.162322
+    },
+    {
+      "day": 163,
+      "apr_printed": 0.078959
+    },
+    {
+      "day": 164,
+      "apr_printed": 0.141028
+    },
+    {
+      "day": 165,
+      "apr_printed": 0.150468
+    },
+    {
+      "day": 166,
+      "apr_printed": 0.204758
+    },
+    {
+      "day": 167,
+      "apr_printed": 0.141717
+    },
+    {
+      "day": 168,
+      "apr_printed": 0.130364
+    },
+    {
+      "day": 169,
+      "apr_printed": 0.185943
+    },
+    {
+      "day": 170,
+      "apr_printed": 0.140003
+    },
+    {
+      "day": 171,
+      "apr_printed": 0.153074
+    },
+    {
+      "day": 172,
+      "apr_printed": 0.130876
+    },
+    {
+      "day": 173,
+      "apr_printed": 0.159342
+    },
+    {
+      "day": 174,
+      "apr_printed": 0.191328
+    },
+    {
+      "day": 175,
+      "apr_printed": 0.104124
+    },
+    {
+      "day": 176,
+      "apr_printed": 0.129825
+    },
+    {
+      "day": 177,
+      "apr_printed": 0.130392
+    },
+    {
+      "day": 178,
+      "apr_printed": 0.071168
+    },
+    {
+      "day": 179,
+      "apr_printed": 0.153983
+    },
+    {
+      "day": 180,
+      "apr_printed": 0.157587
+    },
+    {
+      "day": 181,
+      "apr_printed": 0.126946
+    },
+    {
+      "day": 182,
+      "apr_printed": 0.093957
+    },
+    {
+      "day": 183,
+      "apr_printed": 0.046347
+    },
+    {
+      "day": 184,
+      "apr_printed": 0.105499
+    },
+    {
+      "day": 185,
+      "apr_printed": 0.103117
+    },
+    {
+      "day": 186,
+      "apr_printed": 0.086314
+    },
+    {
+      "day": 187,
+      "apr_printed": 0.040331
+    },
+    {
+      "day": 188,
+      "apr_printed": 0.042251
+    },
+    {
+      "day": 189,
+      "apr_printed": 0.066531
+    },
+    {
+      "day": 190,
+      "apr_printed": 0.055107
+    },
+    {
+      "day": 191,
+      "apr_printed": 0.100663
+    },
+    {
+      "day": 192,
+      "apr_printed": 0.023672
+    },
+    {
+      "day": 193,
+      "apr_printed": 0.059286
+    },
+    {
+      "day": 194,
+      "apr_printed": -0.033707
+    },
+    {
+      "day": 195,
+      "apr_printed": 0.027174
+    },
+    {
+      "day": 196,
+      "apr_printed": 0.094365
+    },
+    {
+      "day": 197,
+      "apr_printed": 0.047659
+    },
+    {
+      "day": 198,
+      "apr_printed": 0.061389
+    },
+    {
+      "day": 199,
+      "apr_printed": 0.132453
+    },
+    {
+      "day": 200,
+      "apr_printed": 0.128402
+    }
+  ],
+  "family_edge_series": [
+    {
+      "day": 15,
+      "forward_net_edge_bps": 110.9372,
+      "perp_net_edge_bps": -6.8204,
+      "selected": "forward_basis_v1"
+    },
+    {
+      "day": 20,
+      "forward_net_edge_bps": 144.1305,
+      "perp_net_edge_bps": 98.6418,
+      "selected": "forward_basis_v1"
+    },
+    {
+      "day": 25,
+      "forward_net_edge_bps": 154.4961,
+      "perp_net_edge_bps": 136.3293,
+      "selected": "forward_basis_v1"
+    },
+    {
+      "day": 30,
+      "forward_net_edge_bps": 167.7755,
+      "perp_net_edge_bps": 153.2347,
+      "selected": "forward_basis_v1"
+    },
+    {
+      "day": 35,
+      "forward_net_edge_bps": 145.1151,
+      "perp_net_edge_bps": 133.8613,
+      "selected": "forward_basis_v1"
+    },
+    {
+      "day": 40,
+      "forward_net_edge_bps": 134.6094,
+      "perp_net_edge_bps": 145.876,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 45,
+      "forward_net_edge_bps": 149.0982,
+      "perp_net_edge_bps": 162.0013,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 50,
+      "forward_net_edge_bps": 159.705,
+      "perp_net_edge_bps": 172.787,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 55,
+      "forward_net_edge_bps": 152.1824,
+      "perp_net_edge_bps": 147.9835,
+      "selected": "forward_basis_v1"
+    },
+    {
+      "day": 60,
+      "forward_net_edge_bps": 166.7342,
+      "perp_net_edge_bps": 177.7906,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 65,
+      "forward_net_edge_bps": 175.5711,
+      "perp_net_edge_bps": 193.4755,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 70,
+      "forward_net_edge_bps": 185.2993,
+      "perp_net_edge_bps": 204.5021,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 75,
+      "forward_net_edge_bps": 186.9234,
+      "perp_net_edge_bps": 200.1268,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 80,
+      "forward_net_edge_bps": 197.31,
+      "perp_net_edge_bps": 206.5039,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 85,
+      "forward_net_edge_bps": 195.5898,
+      "perp_net_edge_bps": 228.0493,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 90,
+      "forward_net_edge_bps": 212.2027,
+      "perp_net_edge_bps": 223.8021,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 95,
+      "forward_net_edge_bps": 212.9829,
+      "perp_net_edge_bps": 217.8427,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 100,
+      "forward_net_edge_bps": 218.721,
+      "perp_net_edge_bps": 231.8362,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 105,
+      "forward_net_edge_bps": 237.2404,
+      "perp_net_edge_bps": 260.5725,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 110,
+      "forward_net_edge_bps": 260.0705,
+      "perp_net_edge_bps": 293.0341,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 115,
+      "forward_net_edge_bps": 265.0155,
+      "perp_net_edge_bps": 300.3288,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 120,
+      "forward_net_edge_bps": 280.3053,
+      "perp_net_edge_bps": 301.6946,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 125,
+      "forward_net_edge_bps": 299.7668,
+      "perp_net_edge_bps": 314.9324,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 130,
+      "forward_net_edge_bps": 302.201,
+      "perp_net_edge_bps": 324.9871,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 135,
+      "forward_net_edge_bps": 310.7725,
+      "perp_net_edge_bps": 325.4308,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 140,
+      "forward_net_edge_bps": 343.5627,
+      "perp_net_edge_bps": 345.8246,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 145,
+      "forward_net_edge_bps": 330.3755,
+      "perp_net_edge_bps": 347.0156,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 150,
+      "forward_net_edge_bps": 341.0892,
+      "perp_net_edge_bps": 360.6291,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 155,
+      "forward_net_edge_bps": 346.3321,
+      "perp_net_edge_bps": 358.3825,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 160,
+      "forward_net_edge_bps": 337.5739,
+      "perp_net_edge_bps": 346.8964,
+      "selected": "perp_carry_v1"
+    },
+    {
+      "day": 165,
+      "forward_net_edge_bps": 330.2904,
+      "perp_net_edge_bps": 317.0381,
+      "selected": "forward_basis_v1"
+    },
+    {
+      "day": 170,
+      "forward_net_edge_bps": 346.8962,
+      "perp_net_edge_bps": 315.3914,
+      "selected": "forward_basis_v1"
+    },
+    {
+      "day": 175,
+      "forward_net_edge_bps": 345.4288,
+      "perp_net_edge_bps": 304.6936,
+      "selected": "forward_basis_v1"
+    },
+    {
+      "day": 180,
+      "forward_net_edge_bps": 315.8764,
+      "perp_net_edge_bps": 286.3143,
+      "selected": "forward_basis_v1"
+    },
+    {
+      "day": 185,
+      "forward_net_edge_bps": 301.9202,
+      "perp_net_edge_bps": 245.8157,
+      "selected": "forward_basis_v1"
+    },
+    {
+      "day": 190,
+      "forward_net_edge_bps": 293.93,
+      "perp_net_edge_bps": 191.0445,
+      "selected": "forward_basis_v1"
+    },
+    {
+      "day": 195,
+      "forward_net_edge_bps": 260.9807,
+      "perp_net_edge_bps": 135.1372,
+      "selected": "forward_basis_v1"
+    },
+    {
+      "day": 200,
+      "forward_net_edge_bps": 262.6121,
+      "perp_net_edge_bps": 141.0576,
+      "selected": "forward_basis_v1"
+    }
+  ]
 }

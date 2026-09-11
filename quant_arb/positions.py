@@ -27,15 +27,20 @@ class PaperPosition:
     opportunity: Opportunity
     opened_day: int
     settle_day: int
+    opened_ts: int = 0                # v0.3.0: needed for printed-funding accrual windows
     state: PositionState = PositionState.OPEN
     legs: Tuple[ExecutableLeg, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         self.legs = self.opportunity.legs
 
-    def settle(self, *, settle_ts: int, forward_settle_px: Price, spot_exit_px: Price) -> dict:
-        """Settle at expiry: forward cash-settles at the settlement print,
-        spot is sold back to the desk at its bid.
+    def settle(self, *, settle_ts: int, forward_settle_px: Price, spot_exit_px: Price,
+               perp_exit_mark: Price | None = None,
+               funding_accrual_usd: float = 0.0) -> dict:
+        """Settle at expiry: forward cash-settles at the settlement print, the
+        CEX perp leg closes at its mark, spot is sold back to the desk at its
+        bid, and a floating-carry position additionally receives the printed
+        funding accrual (signed — a short perp receives positive funding).
 
         I-3 (signed PnL): leg PnL = (exit_px − entry_px) × qty × direction.
         Long gains when exit > entry; short gains when exit < entry. There is
@@ -47,7 +52,14 @@ class PaperPosition:
         total = 0.0
         quantity_chain_ok = True
         for leg in self.legs:
-            exit_px = forward_settle_px if leg.instrument.kind == "forward" else spot_exit_px
+            if leg.instrument.kind == "forward":
+                exit_px = forward_settle_px
+            elif leg.instrument.kind == "perp":
+                if perp_exit_mark is None:
+                    raise ValueError(f"{self.position_id}: perp leg requires perp_exit_mark")
+                exit_px = perp_exit_mark
+            else:
+                exit_px = spot_exit_px
             signed_pnl = (exit_px.value - leg.px.value) * leg.qty * leg.direction
             # I-5: the quantity that settles must be the quantity that opened
             if exit_px.ts <= leg.px.ts:
@@ -62,6 +74,7 @@ class PaperPosition:
                 "signed_pnl_usd": round(signed_pnl, 6),
             })
             total += signed_pnl
+        total += funding_accrual_usd          # signed: + = received by the short-perp side
         self.state = PositionState.SETTLED
         return {
             "position_id": self.position_id,
@@ -70,6 +83,7 @@ class PaperPosition:
             "settle_day": self.settle_day,
             "settle_ts": settle_ts,
             "signed_pnl_usd": round(total, 6),
+            "funding_accrual_usd": round(funding_accrual_usd, 6),
             "legs_pnl": legs_pnl,
             "quantity_chain_ok": quantity_chain_ok,
             "ex_ante_net_edge_bps": round(self.opportunity.net_executable_edge_bps, 4),

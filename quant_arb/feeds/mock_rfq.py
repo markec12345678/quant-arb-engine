@@ -188,3 +188,28 @@ class MockRFQFeed:
     def settlement_print(self) -> Price:
         """Forward settlement fixing = spot at expiry (cash settlement)."""
         return Price(value=self._spot, source=PriceSource.SETTLEMENT_PRINT, ts=self._now)
+
+    # ------------------------------------------------------------------ cex perp
+    # v0.3.0 (decision record C3): the floating-carry instrument. The synthetic
+    # perp tracks the index (mark = spot composite) — basis drift is not the
+    # research question here; funding float is. Costs (taker fee + half-spread)
+    # are EXPLICIT waterfall lines, not embedded in this price (a CEX leg is not
+    # an RFQ — see I-4's scope note in edge/all_in_edge.py).
+
+    def perp_instrument(self) -> Instrument:
+        p = self.params
+        return Instrument(symbol=f"{p.symbol}-PERP", kind="perp", venue="SYNTH_CEX",
+                          base=p.symbol, qty_precision=4)
+
+    def perp_mark(self) -> Price:
+        """CEX perp mark = the composite index level (source-tagged, I-1)."""
+        return Price(value=self._spot, source=PriceSource.PERP_MARK, ts=self._now)
+
+    def printed_funding_between(self, ts_from: int, ts_to: int) -> float:
+        """Σ printed per-interval funding rates over (ts_from, ts_to].
+
+        The accrual a short-perp position actually receives on a CEX: the
+        printed settlement rates (observation noise included), interval-
+        normalized inside the sum. Multiply by qty × reference notional.
+        """
+        return sum(o.rate_interval for o in self._obs if ts_from < o.ts <= ts_to)
