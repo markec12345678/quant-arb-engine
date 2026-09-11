@@ -81,8 +81,8 @@ Module map:
 | `scripts/research_run.py` | CLI entry point (single run) |
 | `scripts/research_sweep.py` | Multi-seed sweep CLI (v0.5: 80 seeds = screening 1..60 + holdout 61..80 + like-for-like 1..40); overwrites the stable `run-latest.json` / `sweep-latest.json` derived summaries for the tower |
 | `quant_arb/rfq/` | **W0 (v0.6): the real-world data layer** — `schema.py` `ExternalRFQ` (the 15 user-specified fields + the `source` epistemic wall + verbatim `raw`, write-time invariants R-1…R-13), `journal.py` immutable hash-chained raw journal (tamper/reorder/insertion detection; head-vs-status truncation bound), `edge.py` deterministic ALL-IN EDGE accounting (I-4 descendant: fees charged exactly once), `replay.py` descriptive reporting |
-| `quant_arb/rfq/providers/` | Pluggable adapters — `file_ingest.py` (REAL: desk exports JSONL/JSON/CSV), `webhook.py` (REAL: push receiver, one command when a provider exists), `synthetic.py` (TEST ONLY, `source="synthetic"` hardwired), `base.py` declarative `FieldMap` normalization (ISO→epoch, bps→pct, side/status synonyms) |
-| `scripts/rfq_ingest.py` · `rfq_replay.py` · `rfq_webhook_recv.py` · `rfq_coverage.py` | W0/W1-INFRA CLIs — ingest (`--dry-run` first-contact validation writes NOTHING) / verify+replay (descriptive accounting only) / webhook receiver / coverage census (`--json`, `--family`; the one-command research-readiness answer before any W1 record is sealed) |
+| `quant_arb/rfq/providers/` | Pluggable adapters — `file_ingest.py` (REAL: desk exports JSONL/JSON/CSV), `webhook.py` (REAL: push receiver, one command when a provider exists; **v0.6.4 hardened** — sealed `docs/w0-webhook-hardening.md`: per-append status refresh via the `on_append` hook so the tower stays live while the always-on path ingests, honest response semantics (derived-artifact failure → `status_refresh:"stale"`, never a fake ingestion failure), honest 500 surface (class travels, traceback doesn't, nothing journaled)), `synthetic.py` (TEST ONLY, `source="synthetic"` hardwired), `base.py` declarative `FieldMap` normalization (ISO→epoch, bps→pct, side/status synonyms) |
+| `scripts/rfq_ingest.py` · `rfq_replay.py` · `rfq_webhook_recv.py` · `rfq_coverage.py` | W0/W1-INFRA CLIs — ingest (`--dry-run` first-contact validation writes NOTHING) / verify+replay (descriptive accounting only) / webhook receiver (refreshes `rfq-status.json` per accepted record — `--no-status-refresh` escape for bursts; `--status` mirrors `--journal`) / coverage census (`--json`, `--family`; the one-command research-readiness answer before any W1 record is sealed) |
 
 ## Run the research demo (zero network, zero capital)
 
@@ -148,24 +148,27 @@ python3 scripts/rfq_replay.py --verify-only
 python3 scripts/rfq_replay.py --markdown
 
 # push-provider receiver (run when a feed exists; binds 127.0.0.1)
+# every ACCEPTED record also refreshes rfq-status.json — the tower stays live
 python3 scripts/rfq_webhook_recv.py --port 3901 --token SHARED_SECRET
 
 # research-readiness census of the journal (families, eligibility, days, tenors)
 python3 scripts/rfq_coverage.py            # human report
 python3 scripts/rfq_coverage.py --json     # machine-readable, for the W1 record
 
-# reproduce every W0 invariant check from the repo alone (92 checks, exit = failures)
+# reproduce every W0 invariant check from the repo alone (100 checks, exit = failures)
 python3 research/exploration/verify_w0_invariants.py
 ```
 
 Honest status as shipped: **0 real records** — no RFQ desk API credentials exist
-in this environment. The machinery is complete, invariant-checked (92 checks:
+in this environment. The machinery is complete, invariant-checked (100 checks:
 fully reproducible from the repo via
 `research/exploration/verify_w0_invariants.py`: chain tamper/reorder/insert/
 truncate detection, duplicate-id rejection (journal + within-batch), future
 reference rejection, determinism, source wall, edge accounting, field-map
 synonyms, dry-run writes-nothing, malformed-row isolation, webhook receiver —
 token gate, duplicate/future-ts rejection, malformed JSON, only-valid-journaled,
+the v0.6.4 webhook hardening — per-append status refresh, stale-marker
+honesty, 500 surface, zero pollution of the real artifact,
 the W1-INFRA replay adapter — source wall, provenance mapping, tenor
 convention, refused funding/settlement surfaces, read-only replay — and the
 W1-INFRA coverage census — eligibility breakdown, day/tenor coverage,

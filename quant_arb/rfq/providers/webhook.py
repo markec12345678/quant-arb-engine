@@ -11,14 +11,22 @@ Paradigm-style push integrations and desk webhooks; runnable in one command:
 Security posture (honest): bind to 127.0.0.1 by default; a shared-secret
 token is supported via --token (checked in constant time) and SHOULD be used
 whenever the listener is exposed beyond localhost.
+
+v0.6.4 hardening (sealed docs/w0-webhook-hardening.md): an injectable
+``on_append`` hook lets the CLI refresh the derived status artifact after
+every accepted record (H-1) — with honest response semantics (H-2: a
+derived-artifact failure never masquerades as an ingestion failure) and an
+honest 500 surface for unexpected internal errors (H-3: class name travels,
+traceback does not, nothing journaled).
 """
 
 from __future__ import annotations
 
 import hmac
 import json
+import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from .base import FieldMap, normalize
 from ..journal import RawRFQJournal
@@ -27,10 +35,12 @@ from ..schema import RFQSchemaError
 
 class WebhookReceiver:
     def __init__(self, journal: RawRFQJournal, field_map: FieldMap,
-                 token: Optional[str] = None) -> None:
+                 token: Optional[str] = None,
+                 on_append: Optional[Callable[[Dict[str, Any]], None]] = None) -> None:
         self.journal = journal
         self.field_map = field_map
         self.token = token
+        self.on_append = on_append   # H-1: called AFTER a successful append
 
     def handler(self) -> type:
         receiver = self
@@ -60,12 +70,35 @@ class WebhookReceiver:
                 try:
                     rec = normalize(payload, receiver.field_map, provider_source="real")
                     line = receiver.journal.append(rec)
-                    self._reply(200, {"ok": True, "seq": line["seq"],
-                                      "rfq_id": rec.rfq_id, "hash": line["hash"]})
                 except RFQSchemaError as e:
                     # rejected payloads are NOT journaled (fail-closed); the
                     # caller gets the invariant id in the response
                     self._reply(422, {"ok": False, "error": str(e)})
+                    return
+                except Exception as e:   # H-3: honest 500, nothing journaled
+                    self._reply(500, {"ok": False,
+                                      "error": f"{type(e).__name__}: {e}"})
+                    return
+                # the record IS journaled from here on (H-2): a derived
+                # status-refresh failure must never masquerade as an
+                # ingestion failure — the journal is the source of truth
+                refresh: Optional[str] = None
+                if receiver.on_append is not None:
+                    try:
+                        receiver.on_append(line)
+                        refresh = "ok"
+                    except Exception as e:
+                        refresh = "stale"
+                        print(f"[rfq-webhook] STATUS REFRESH FAILED — journal is "
+                              f"the source of truth, derived artifact stale: "
+                              f"{type(e).__name__}: {e}", file=sys.stderr,
+                              flush=True)
+                resp: Dict[str, Any] = {"ok": True, "seq": line["seq"],
+                                        "rfq_id": rec.rfq_id,
+                                        "hash": line["hash"]}
+                if refresh is not None:
+                    resp["status_refresh"] = refresh
+                self._reply(200, resp)
 
             def _reply(self, code: int, obj: Dict[str, Any]) -> None:
                 data = json.dumps(obj).encode("utf-8")

@@ -111,13 +111,19 @@ seed changes the numbers; the invariants do not change.
 
 ## Extension points (in order of arrival)
 
-1. **W0 real RFQ ingestion** — **EXISTS (v0.6, hardened v0.6.1)**: `quant_arb/rfq/`
+1. **W0 real RFQ ingestion** — **EXISTS (v0.6, hardened v0.6.1, webhook
+   hardened v0.6.4)**: `quant_arb/rfq/`
    (see module contracts). The raw immutable journal + adapters + deterministic
    ALL-IN EDGE accounting; descriptive only. Real data starts when a feed is
    connected (file export today, `--dry-run` first-contact validation writes
-   nothing; webhook receiver ships; authenticated-REST poller is a documented
-   slot). The invariant checks are tracked and reproducible from the repo:
-   `research/exploration/verify_w0_invariants.py`.
+   nothing; webhook receiver ships — v0.6.4 sealed
+   `docs/w0-webhook-hardening.md`: every accepted record refreshes the derived
+   status artifact via the `on_append` hook so the tower stays live on the
+   always-on path, honest response semantics (derived-artifact failure →
+   `status_refresh:"stale"`, never a fake ingestion failure), honest 500
+   surface (class travels, traceback doesn't); authenticated-REST poller is a
+   documented slot). The invariant checks are tracked and reproducible from
+   the repo: `research/exploration/verify_w0_invariants.py` (100 checks).
 2. **W1 real feed research** — the **journal replayer EXISTS (v0.6.2)**:
    `quant_arb/feeds/journal_replay.py` (sealed `docs/w1-replay-adapter.md` —
    mapping M-1…M-10, source wall at the Price layer, funding/settlement

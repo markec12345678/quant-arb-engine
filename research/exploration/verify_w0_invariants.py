@@ -603,6 +603,156 @@ try:
                  capture_output=True, text=True)
     check("coverage CLI: bad family symbol refused (C-1 BASE-QUOTE form)",
           r4.returncode == 1 and "C-1" in r4.stderr)
+
+    # --- 12. W0 webhook hardening (v0.6.4, sealed docs/w0-webhook-hardening.md) ---
+    import urllib.request as _ur
+    from quant_arb.rfq.providers.webhook import WebhookReceiver
+
+    def _post(port, obj, token="T", path="/rfq"):
+        req = _ur.Request(f"http://127.0.0.1:{port}{path}",
+                          data=json.dumps(obj).encode(),
+                          headers={"Content-Type": "application/json",
+                                   "X-RFQ-Token": token}, method="POST")
+        try:
+            with _ur.urlopen(req, timeout=5) as r:
+                return r.status, json.loads(r.read().decode())
+        except _ur.HTTPError as e:
+            return e.code, json.loads(e.read().decode())
+
+    _WP = {"rfq_id": "WH-C1", "instrument": "BTC-USD", "venue": "DESK-W",
+           "ts": T0, "side": "buy", "requested_notional": 50000.0,
+           "quoted_price": 99.5, "quote_type": "firm",
+           "quote_expiry_ts": T0 + 30_000, "fees_pct": 0.05,
+           "fees_included_in_price": False, "spread_bps": 8.0,
+           "reference_price": 100.0, "reference_ts": T0 - 1000,
+           "latency_ms": 120.0, "status": "quoted", "reference_source":
+           "spot_book_mid"}
+
+    # 12a: the on_append hook fires after append, line travels (H-1)
+    hj = RawRFQJournal(os.path.join(tmp, "hook.jsonl"))
+    hooked = []
+    recv_a = WebhookReceiver(hj, FieldMap(), token="T",
+                             on_append=hooked.append)
+    srv_a = ThreadingHTTPServer(("127.0.0.1", 0), recv_a.handler())
+    import threading as _th
+    _th.Thread(target=srv_a.serve_forever, daemon=True).start()
+    try:
+        code_a, resp_a = _post(srv_a.server_address[1], _WP)
+        check("webhook on_append hook fires with the written line (H-1)",
+              code_a == 200 and len(hooked) == 1
+              and hooked[0]["seq"] == 1 and resp_a["status_refresh"] == "ok")
+        # 12b: refresh failure → 200 + "stale", journal intact (H-2)
+        def _boom(line):
+            raise RuntimeError("disk on fire")
+        recv_b = WebhookReceiver(hj, FieldMap(), token="T", on_append=_boom)
+        _WP2 = dict(_WP, rfq_id="WH-C2")
+        # reuse the port via a second server on a fresh ephemeral port
+        srv_b = ThreadingHTTPServer(("127.0.0.1", 0), recv_b.handler())
+        _th.Thread(target=srv_b.serve_forever, daemon=True).start()
+        try:
+            code_b, resp_b = _post(srv_b.server_address[1], _WP2)
+            check("webhook refresh failure: 200 + stale marker, journal intact (H-2)",
+                  code_b == 200 and resp_b["ok"] is True
+                  and resp_b["status_refresh"] == "stale"
+                  and hj.count() == 2)
+        finally:
+            srv_b.shutdown(); srv_b.server_close()
+        # 12c: internal error → honest 500, nothing journaled (H-3)
+        class _BrokenJournal:
+            path = os.path.join(tmp, "broken.jsonl")
+            def append(self, rec):
+                raise PermissionError("journal dir read-only")
+        recv_c = WebhookReceiver(_BrokenJournal(), FieldMap(), token="T")
+        srv_c = ThreadingHTTPServer(("127.0.0.1", 0), recv_c.handler())
+        _th.Thread(target=srv_c.serve_forever, daemon=True).start()
+        try:
+            code_c, resp_c = _post(srv_c.server_address[1], _WP)
+            check("webhook internal error → honest 500, class travels, "
+                  "nothing journaled (H-3)",
+                  code_c == 500 and "PermissionError" in resp_c["error"]
+                  and not os.path.exists(_BrokenJournal.path))
+        finally:
+            srv_c.shutdown(); srv_c.server_close()
+        # 12d: no hook wired → response has no status_refresh key (H-5)
+        recv_d = WebhookReceiver(hj, FieldMap(), token="T")   # on_append=None
+        _WP3 = dict(_WP, rfq_id="WH-C3")
+        srv_d = ThreadingHTTPServer(("127.0.0.1", 0), recv_d.handler())
+        _th.Thread(target=srv_d.serve_forever, daemon=True).start()
+        try:
+            code_d, resp_d = _post(srv_d.server_address[1], _WP3)
+            check("webhook bare module: no hook → no status_refresh key (H-5)",
+                  code_d == 200 and "status_refresh" not in resp_d
+                  and hj.count() == 3)
+        finally:
+            srv_d.shutdown(); srv_d.server_close()
+    finally:
+        srv_a.shutdown(); srv_a.server_close()
+
+    # 12e: CLI end-to-end — the real receiver process refreshes the artifact
+    recv_cli = os.path.join(os.path.dirname(__file__), "..", "..", "scripts",
+                            "rfq_webhook_recv.py")
+    _real_status = os.path.abspath(os.path.join(
+        os.path.dirname(__file__), "..", "artifacts", "rfq-status.json"))
+    _rs_before = (open(_real_status, "rb").read()
+                  if os.path.exists(_real_status) else b"")
+    _cli_journal = os.path.join(tmp, "cli-wh.jsonl")
+    _cli_status = os.path.join(tmp, "cli-status.json")
+    _port = 3971
+    proc = _sp.Popen([sys.executable, recv_cli, "--journal", _cli_journal,
+                      "--status", _cli_status, "--port", str(_port),
+                      "--token", "T"],
+                     stdout=_sp.PIPE, stderr=_sp.STDOUT, text=True)
+    try:
+        for _ in range(50):     # wait for the listener
+            try:
+                _ur.urlopen(f"http://127.0.0.1:{_port}/rfq", timeout=0.2)
+            except _ur.HTTPError:
+                break
+            except Exception:
+                import time as _t; _t.sleep(0.1)
+        code_e1, resp_e1 = _post(_port, _WP)
+        ok_e1 = (code_e1 == 200 and resp_e1.get("status_refresh") == "ok"
+                 and json.load(open(_cli_status))["integrity"]["lines"] == 1
+                 and json.load(open(_cli_status))["integrity"]["sources"]
+                 == {"real": 1}
+                 and json.load(open(_cli_status))["last_operation"]["op"]
+                 == "webhook-append")
+        check("webhook CLI e2e: accepted record refreshes the status artifact "
+              "(H-1) and the REAL artifact is untouched", ok_e1)
+        code_e2, resp_e2 = _post(_port, _WP)      # duplicate rfq_id
+        check("webhook CLI e2e: duplicate still 422 under refresh wiring (H-4)",
+              code_e2 == 422 and "R-1" in resp_e2["error"]
+              and json.load(open(_cli_status))["integrity"]["lines"] == 1)
+    finally:
+        proc.terminate(); proc.wait(timeout=5)
+    # 12f: --no-status-refresh leaves the artifact untouched
+    _port2 = 3972
+    proc2 = _sp.Popen([sys.executable, recv_cli, "--journal", _cli_journal,
+                       "--status", _cli_status, "--port", str(_port2),
+                       "--token", "T", "--no-status-refresh"],
+                      stdout=_sp.PIPE, stderr=_sp.STDOUT, text=True)
+    try:
+        for _ in range(50):
+            try:
+                _ur.urlopen(f"http://127.0.0.1:{_port2}/rfq", timeout=0.2)
+            except _ur.HTTPError:
+                break
+            except Exception:
+                import time as _t; _t.sleep(0.1)
+        _st_before = json.load(open(_cli_status))["integrity"]["lines"]
+        code_f, resp_f = _post(_port2, dict(_WP, rfq_id="WH-C9"))
+        check("webhook CLI e2e: --no-status-refresh appends but leaves the "
+              "artifact untouched (escape flag honest)",
+              code_f == 200 and "status_refresh" not in resp_f
+              and json.load(open(_cli_status))["integrity"]["lines"]
+              == _st_before
+              and RawRFQJournal(_cli_journal).count() == 2)
+    finally:
+        proc2.terminate(); proc2.wait(timeout=5)
+    check("webhook CLI e2e: the repo's real rfq-status.json unchanged by all "
+          "CLI tests (zero pollution)",
+          (open(_real_status, "rb").read() if os.path.exists(_real_status)
+           else b"") == _rs_before)
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 
