@@ -23,6 +23,20 @@ v0.4.0 — σ_H round 2 (decision record docs/decision-record-v0.4.0.md):
   stationary-mean estimator (HAC measured 73.2 %, REJECTED) captures. One σ,
   one meaning: the z_perp gate, the carry buffer and the journal all carry
   the same trend-aware number; the v0.3 component is journaled next to it.
+
+v0.5.0 — σ_H round 3 (decision record docs/decision-record-v0.5.0.md):
+- ``horizon_sigma_downside_apr`` → σ_H v3 = adverse-side horizon σ: for a
+  LONG-CARRY position the PnL geometry of trend risk is one-sided, so only
+  the adverse (falling) visible trend is charged, in full — identical to
+  v0.4 when β̂ < 0 — while a rising visible trend carries zero trend exposure
+  (the regime-reversal tail priced at zero: the optimistic bound of the
+  reversal-ignorance interval; v0.4 was the pessimistic bound; no interior
+  weight is grounded, so none is used). One σ, one meaning: the z_perp gate
+  (a downside persistence ratio), the carry buffer and the journal all carry
+  σ_down; the v0.4 two-sided value and the v0.3 iid value are journaled next
+  to it as audit components. The v0.4 P4 refutation (hit-rate 60.2 % →
+  11.4 %) measured the two-sided charge's decision price: all 46 of its
+  residual breaches were POSITIVE-direction — pure upside over-pricing.
 """
 
 from __future__ import annotations
@@ -152,6 +166,85 @@ def horizon_sigma_trend_apr(
         "sigma_iid_block": round(sigma_iid, 6),
         "beta_hat_apr_per_day": round(beta, 8),
         "trend_term_apr": round(trend_term, 6),
+        "iid_block_diag": diag_iid,
+    }
+
+
+def horizon_sigma_downside_apr(
+    obs: Sequence[FundingObservation], horizon_days: float,
+    trend_window_days: int = 60,
+) -> Tuple[float, dict]:
+    """σ_H v3 — adverse-side horizon σ (decision record v0.5.0 C1).
+
+    The adverse-direction (PnL-negative for a long-carry holder) uncertainty
+    of "mean funding APR over the next H days around the current level
+    estimate":
+
+        σ_A     = v0.3 overlapping-window iid-block value   (audit component, kept)
+        β̂       = OLS slope of daily printed APRs over the last min(n, M) days
+        adverse = max(0, −β̂) · H / 2      (a FALLING trend is charged in full —
+                                            continuation is the adverse central
+                                            case, identical to v0.4's charge)
+        σ_down  = sqrt( σ_A² + adverse² )
+
+    A rising visible trend carries zero trend exposure: its continuation
+    error is upside (+carry), trend death lands at ≈ 0 (the EWMA lag floors
+    it), and only a full regime reversal hurts — a tail whose probability is
+    unknowable from backward-looking data. v0.4 charged that reversal at full
+    weight (the pessimistic bound of the reversal-ignorance interval) and the
+    measured decision price was the P4 refutation (hit-rate 60.2 % → 11.4 %,
+    with all 46 residual breaches positive-direction). v0.5 prices it at zero
+    (the optimistic bound) and reports that bound's measured price honestly
+    (decision record P4/P5). No interior weight is grounded, so none is used.
+
+    Deterministic, no RNG; backward-looking only (generator parameters never
+    read). Fail-closed: fewer than 3 daily observations, or a degenerate zero
+    σ_down → returns 0.0 so the perp z-gate FAILS (persistence unproven), same
+    semantics as v0.3.0/v0.4.0. Returns (sigma_apr, diagnostics); diagnostics
+    are journaled with every use — including the v0.4 two-sided value itself
+    (``sigma_twosided_apr``) and both rounded components, so the audit
+    round-trip sqrt(σ_iid² + twosided_term²) is checkable at journal
+    precision; the upgrade is auditable, never asserted.
+    """
+    if horizon_days <= 0:
+        raise ValueError("horizon_days must be positive")
+    if trend_window_days < 3:
+        raise ValueError("trend_window_days must be >= 3")
+
+    sigma_iid, diag_iid = horizon_sigma_apr(obs, horizon_days)
+    dailies = daily_printed_aprs(obs)
+    n = len(dailies)
+    if n < 3 or sigma_iid <= 0:
+        return 0.0, {"method": "insufficient_history", "n_days": n,
+                     "trend_window_days": 0, "sigma_iid_block": round(sigma_iid, 6),
+                     "beta_hat_apr_per_day": 0.0, "adverse_trend_term_apr": 0.0,
+                     "twosided_trend_term_apr": 0.0, "sigma_twosided_apr": 0.0}
+
+    m = min(n, int(trend_window_days))
+    y = [apr for _, apr in dailies[-m:]]
+    x = list(range(m))
+    mx = sum(x) / m
+    my = sum(y) / m
+    num = sum((x[i] - mx) * (y[i] - my) for i in range(m))
+    den = sum((x[i] - mx) ** 2 for i in range(m))
+    beta = num / den if den > 0 else 0.0          # APR per day, signed
+    adverse_term = max(0.0, -beta) * horizon_days / 2.0   # falling trend: full charge
+    twosided_term = abs(beta) * horizon_days / 2.0        # v0.4 audit component
+    sigma_down = math.hypot(sigma_iid, adverse_term)
+    if sigma_down <= 0:
+        return 0.0, {"method": "degenerate_zero", "n_days": n,
+                     "trend_window_days": m, "sigma_iid_block": round(sigma_iid, 6),
+                     "beta_hat_apr_per_day": 0.0, "adverse_trend_term_apr": 0.0,
+                     "twosided_trend_term_apr": 0.0, "sigma_twosided_apr": 0.0}
+    return sigma_down, {
+        "method": "iid_block_plus_adverse_trend",
+        "n_days": n,
+        "trend_window_days": m,
+        "sigma_iid_block": round(sigma_iid, 6),
+        "beta_hat_apr_per_day": round(beta, 8),
+        "adverse_trend_term_apr": round(adverse_term, 6),
+        "twosided_trend_term_apr": round(twosided_term, 6),
+        "sigma_twosided_apr": round(math.hypot(sigma_iid, twosided_term), 6),
         "iid_block_diag": diag_iid,
     }
 

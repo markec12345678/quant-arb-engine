@@ -7,7 +7,8 @@ submits an order, never holds capital, never talks to a live venue.**
 > Built 2026-09-11 per the recorded decision in
 > [`docs/decision-record-2026-09-11.md`](docs/decision-record-2026-09-11.md);
 > v0.3.0 per [`docs/decision-record-v0.3.0.md`](docs/decision-record-v0.3.0.md);
-> v0.4.0 per [`docs/decision-record-v0.4.0.md`](docs/decision-record-v0.4.0.md).
+> v0.4.0 per [`docs/decision-record-v0.4.0.md`](docs/decision-record-v0.4.0.md);
+> v0.5.0 per [`docs/decision-record-v0.5.0.md`](docs/decision-record-v0.5.0.md).
 > The measured system ([funding-arb](https://github.com/markec12345678/funding-arb)
 > @ `0373f5d`) stays untouched and keeps collecting Phase-2 A/B/C evidence:
 > **the old system measures reality; this engine explores the next generation.**
@@ -34,7 +35,7 @@ every module here:
 ## Architecture
 
 ```
-                    QUANT ARB ENGINE  (v0.4 — trend-aware σ_H)
+                    QUANT ARB ENGINE  (v0.5 — adverse-side σ_H)
                            │
              ┌─────────────┼─────────────┐
              ↓             ↓             ↓
@@ -61,17 +62,17 @@ Module map:
 | `quant_arb/models/market_data.py` | `Venue`-agnostic primitives: `Instrument`, `Price` (**value + source + ts — never a naked number, I-1**), `FundingObservation` (hour-normalized), `RFQQuote` (fee model fully embedded in the quoted price, I-4) |
 | `quant_arb/models/opportunity.py` | **Universal opportunity model** — legs with direction, executable entry/exit, requested **and** executed size (I-2/I-6), carry estimate, edge, confidence |
 | `quant_arb/models/journal.py` | Append-only JSONL event journal with **write-time invariant enforcement** (I-1…I-6) |
-| `quant_arb/edge/carry.py` | Implied-carry math: **two sigmas with two meanings** — `ewma_funding` → σ_level (instantaneous estimator error), `horizon_sigma_apr` → σ_H (empirical dispersion of H-day window means, overlapping windows, deterministic); forward-implied APR; gap z-score |
+| `quant_arb/edge/carry.py` | Implied-carry math: **three sigmas, one gate** — `ewma_funding` → σ_level (instantaneous estimator error), `horizon_sigma_apr` → σ_A (iid-block window dispersion, v0.3 audit), `horizon_sigma_trend_apr` → σ_H two-sided (v0.4 audit), `horizon_sigma_downside_apr` → **σ_down, the adverse-side gate σ of v0.5** (falling trend charged in full, rising uncharged); forward-implied APR; gap z-score |
 | `quant_arb/edge/all_in_edge.py` | **ALL-IN EDGE waterfall** — every subtraction explicit, nothing folded into gross (I-4). Two waterfalls: `evaluate_forward_basis` (locked premium) and `evaluate_perp_carry` (floating carry, explicit CEX cost lines) |
 | `quant_arb/feeds/mock_rfq.py` | Deterministic synthetic world **v2** (seeded): CEX funding prints + OTC desk spot/forward RFQ quotes + perp mark; regime ramps **and collapses**. **SYNTHETIC — research only** |
 | `quant_arb/strategies/forward_basis.py` | **Route B, family `forward_basis_v1`** (lock carry): long spot @ desk ask + short dated forward @ desk bid; gates on net edge (level z retired to diagnostic — decision record C4) |
-| `quant_arb/strategies/perp_carry.py` | **Family `perp_carry_v1`** (float carry): long spot @ desk ask + short CEX perp @ mark; floating funding accrual at settle; gates on net edge AND horizon persistence z_perp = E/σ_H ≥ 2 |
+| `quant_arb/strategies/perp_carry.py` | **Family `perp_carry_v1`** (float carry): long spot @ desk ask + short CEX perp @ mark; floating funding accrual at settle; gates on net edge AND horizon persistence z_perp = E/σ_down ≥ 2 (a downside persistence ratio since v0.5) |
 | `quant_arb/risk/caps.py` | Research caps — per-position notional, tenor, open-position count; enumerated reject reasons |
 | `quant_arb/positions.py` | Paper position state machine: `OPEN → SETTLED`, **signed PnL only** (I-3); perp legs settle at mark + signed funding accrual |
 | `quant_arb/pipeline.py` | Research run loop: feed → **both families → ranking** → edge → risk → journal; `family_eval` + `funding_daily` journaling; summary with unit discipline |
 | `quant_arb/research/stats.py` | Pure-stdlib distribution helpers (mean, sample std, numpy-style linear percentiles) for sweep summaries — machinery diagnostics, never market evidence |
 | `scripts/research_run.py` | CLI entry point (single run) |
-| `scripts/research_sweep.py` | Multi-seed sweep CLI (v0.4: 60 seeds = screening 1..40 + holdout 41..60); overwrites the stable `run-latest.json` / `sweep-latest.json` derived summaries for the tower |
+| `scripts/research_sweep.py` | Multi-seed sweep CLI (v0.5: 80 seeds = screening 1..60 + holdout 61..80 + like-for-like 1..40); overwrites the stable `run-latest.json` / `sweep-latest.json` derived summaries for the tower |
 
 ## Run the research demo (zero network, zero capital)
 
@@ -185,13 +186,79 @@ v0.4.0 (full reasoning, disclosed candidate screening and the STOP RULE in
 Interpretation RULE (unchanged): machinery diagnostics on a synthetic world.
 They validate code paths, never market edges.
 
-## Research layer (v0.2 → v0.4)
+## v0.5 — Asymmetric carry buffer, adverse-side horizon σ (decision record)
+
+v0.4.0's P4 refutation — hit-rate **60.2 % → 11.4 %** — left a recorded
+question: should the carry buffer price **downside semi-deviation** for a
+long-carry position, since a continuing RISING trend is upside? v0.5.0 asked
+exactly that (full estimand argument, disclosed screening and STOP RULE in
+[`docs/decision-record-v0.5.0.md`](docs/decision-record-v0.5.0.md), sealed
+**before** any v0.5 run):
+
+1. **The estimand argument, stated before any number**: for a long-carry
+   position the PnL error under a falling visible trend is adverse
+   (≈ −|β̂|·H/2 — continuation IS the adverse central case, charged in full
+   exactly as v0.4 charged it); under a rising trend the error is upside
+   (continuation adds carry, trend death lands ≈ 0), and only a full regime
+   REVERSAL hurts — a tail whose probability is **unknowable from
+   backward-looking data**. The reversal weight therefore lives on an
+   ignorance interval: v0.4 priced the **pessimistic bound** (reversal weighted
+   like continuation), v0.5 prices the **optimistic bound** (reversal at
+   zero). No interior weight is chosen — that would be the estimator fishing
+   the STOP RULE forbids.
+2. **Disclosed screening on the frozen v0.4 journals** (2b12b34, 420 settles,
+   exact re-derivation to 0.0002 pp): the v0.4 symmetric term's residual
+   breaches were **46/46 positive-direction** — its protective work was pure
+   upside over-pricing (the measured anatomy of P4). The adverse-side
+   candidate: downside breach **0.0 %** (one-sided nominal 2.28 %), upside
+   surprise 21.2 %, mean σ 3.23 pp — CHOSEN as the optimistic bound. Would-be
+   re-ranking: hit-rate 62.8 % pooled / 61.9 % seeds 1..40.
+3. **The estimator**: `horizon_sigma_downside_apr` —
+   σ_down = √(σ_A² + (max(0, −β̂)·H/2)²) with β̂ identical to v0.4's. One σ,
+   one meaning: the z_perp gate (now a **downside persistence ratio**), the
+   carry buffer and the journal all carry σ_down; the v0.4 two-sided and v0.3
+   iid values are journaled next to it as audit components.
+
+80-seed results (SYNTHETIC diagnostics, machinery validation only; the
+executed numbers landed on the pre-registered would-be predictions almost
+exactly — 62.8 %/61.9 % predicted, 62.8 %/61.9 % measured):
+
+- **P1 SUPPORTED**: pooled downside-panel breach **0.0 %** over 560 checks
+  (one-sided nominal 2.28 %; ≤ 8 % pre-registered);
+- **P2 SUPPORTED**: holdout (seeds 61..80, never used in any decision in any
+  engine version) 0.0 % vs screening set (1..60) 0.0 % — the ladder extends,
+  it never re-rolls;
+- **P3 SUPPORTED — the recovery**: like-for-like (seeds 1..40) full-window
+  hit-rate **61.9 %** (v0.4: 11.4 %; v0.3: 60.2 %): removing the un-grounded
+  upside charge restores the majority-correct ranking without touching a
+  single gate threshold;
+- **P4 SUPPORTED — the honest price, measured twice**: (a) day-bucket split
+  32.9 % (window avoids collapse, d ≤ 60) vs 88.0 % (touches, d > 60) — the
+  early-flat information limit concentrates the misses exactly where
+  pre-registered; AND (b) the upside-surprise panel **19.8 %** — the
+  un-charged favorable drift is visible as frequent positive surprises.
+  Reported as cost, never patched;
+- **P5 SUPPORTED**: forward share of contested selections in the collapse
+  phase **68.9 %** like-for-like (v0.4: 95.7 %) — the β̂ regime-turn lag
+  (~10–15 days after the collapse starts, the ramp still dominates the
+  60-day window) leaks those days to the perp; the signed charge takes over
+  after the lag and keeps the collapse majority-forward.
+
+The round's reading, stated plainly: on this synthetic world the v0.4
+pessimistic bound paid a measured decision price (P4 refuted) for protection
+the ex-post record shows it never used (0 downside breaches in 420 settles);
+the v0.5 optimistic bound recovers the ranking and pays its own price in the
+places the record can see — the early-flat information limit and the
+regime-turn lag. The nominal for a real market is neither bound: it is W0's
+real feed. Interpretation RULE unchanged.
+
+## Research layer (v0.2 → v0.5)
 
 Multi-seed sweep on top of the single-run pipeline — the machinery-validation
 layer:
 
 ```bash
-python3 scripts/research_sweep.py                     # 60 seeds (screening 1..40 + holdout 41..60)
+python3 scripts/research_sweep.py                     # 80 seeds (screening 1..60 + holdout 61..80; like-for-like 1..40)
 python3 scripts/research_sweep.py --seeds 10 --days 120 --tenor 60   # quick subset
 ```
 
@@ -205,9 +272,11 @@ Runs the full pipeline per seed (one invariant-enforced journal per seed under
   (daily printed APR) and the **per-day family edge series** (net edge of
   both families + who was selected).
 - `research/artifacts/sweep-latest.json` — cross-seed aggregates: totals,
-  family census, **ranking hit-rate**, **triple z-gate calibration panels**
-  (level / iid / trend + holdout split + entry-history decomposition), the
-  disclosed estimator screening block, reject-reason census, pooled settled
+  family census, **ranking hit-rate (pooled / screening / like-for-like with
+  the contest day-bucket decomposition)**, **quadruple z-gate calibration
+  panels + the upside honest-cost panel** (level / iid / two-sided / adverse
+  + holdout ladder split + entry-history decomposition), the disclosed
+  estimator screening block, reject-reason census, pooled settled
   stats, **scored predictions P1..P5**, per-seed rows.
 
 The two `-latest.json` files are **derived summaries** (plain JSON, not

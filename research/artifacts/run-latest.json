@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-09-11T18:19:08Z",
-  "engine_version": "0.4.0",
-  "run_id": "d203e31c73c7",
+  "generated_at": "2026-09-11T19:26:18Z",
+  "engine_version": "0.5.0",
+  "run_id": "939f26c3b581",
   "journal_path": "research/artifacts/sweep_runs/run_seed_0007.jsonl",
   "summary": {
     "synthetic": true,
@@ -22,22 +22,22 @@
       "forward_basis_v1": {
         "evals": 38,
         "gated_in": 38,
-        "selected": 36,
-        "opened": 12,
-        "settled": 7
+        "selected": 15,
+        "opened": 7,
+        "settled": 5
       },
       "perp_carry_v1": {
         "evals": 38,
         "gated_in": 33,
-        "selected": 2,
-        "opened": 0,
-        "settled": 0
+        "selected": 23,
+        "opened": 5,
+        "settled": 2
       }
     },
-    "realized_signed_pnl_usd": 14480.37,
-    "aggregate_pct_of_notional": 14.4804,
-    "mean_per_position_pct": 2.0686,
-    "ex_ante_net_edge_mean_pct": 1.7425,
+    "realized_signed_pnl_usd": 15986.47,
+    "aggregate_pct_of_notional": 15.9865,
+    "mean_per_position_pct": 2.2838,
+    "ex_ante_net_edge_mean_pct": 1.8229,
     "unit_rule": "aggregate = \u03a3(per-position % of notional) over settled positions; mean = aggregate / N. Never read the aggregate as per-cycle.",
     "epistemic_note": "SYNTHETIC/paper diagnostic only \u2014 on the current sample and reconstruction there is no proof of a positive edge. Never read as a real-trading forecast."
   },
@@ -144,41 +144,41 @@
     },
     {
       "position_id": "PP-0105-006",
-      "strategy_id": "forward_basis_v1",
+      "strategy_id": "perp_carry_v1",
       "opened_day": 105,
       "settle_day": 195,
       "held_days": 90,
-      "signed_pnl_usd": 2690.445716,
-      "pnl_pct_of_notional": 2.690446,
-      "ex_ante_net_edge_bps": 237.2404,
-      "ex_ante_gross_edge_bps": 281.219,
-      "locked_premium_usd": 2720.502677,
-      "locked_premium_bps": 272.0503,
-      "realized_minus_locked_bps": -3.0057,
-      "locked_premium_apr": 0.110331,
-      "funding_accrual_usd": null,
-      "funding_accrual_bps": null,
-      "realized_minus_expected_bps": null,
+      "signed_pnl_usd": 3618.862484,
+      "pnl_pct_of_notional": 3.618862,
+      "ex_ante_net_edge_bps": 260.5725,
+      "ex_ante_gross_edge_bps": 322.6308,
+      "locked_premium_usd": null,
+      "locked_premium_bps": null,
+      "realized_minus_locked_bps": null,
+      "locked_premium_apr": null,
+      "funding_accrual_usd": 3678.919444,
+      "funding_accrual_bps": 367.8919,
+      "realized_minus_expected_bps": 45.2604,
       "perp_alternative_apr": 0.14898,
       "quantity_chain_ok": true
     },
     {
       "position_id": "PP-0110-007",
-      "strategy_id": "forward_basis_v1",
+      "strategy_id": "perp_carry_v1",
       "opened_day": 110,
       "settle_day": 200,
       "held_days": 90,
-      "signed_pnl_usd": 2925.326719,
-      "pnl_pct_of_notional": 2.925327,
-      "ex_ante_net_edge_bps": 260.0705,
-      "ex_ante_gross_edge_bps": 304.4577,
-      "locked_premium_usd": 2952.750287,
-      "locked_premium_bps": 295.275,
-      "realized_minus_locked_bps": -2.7424,
-      "locked_premium_apr": 0.11975,
-      "funding_accrual_usd": null,
-      "funding_accrual_bps": null,
-      "realized_minus_expected_bps": null,
+      "signed_pnl_usd": 3503.008562,
+      "pnl_pct_of_notional": 3.503009,
+      "ex_ante_net_edge_bps": 293.0341,
+      "ex_ante_gross_edge_bps": 357.9844,
+      "locked_premium_usd": null,
+      "locked_premium_bps": null,
+      "realized_minus_locked_bps": null,
+      "locked_premium_apr": null,
+      "funding_accrual_usd": 3560.43213,
+      "funding_accrual_bps": 356.0432,
+      "realized_minus_expected_bps": -1.9423,
       "perp_alternative_apr": 0.144427,
       "quantity_chain_ok": true
     }
@@ -240,6 +240,7 @@
       "ref_mid": 153.43440727011028,
       "sigma_horizon_apr": 0.116073,
       "sigma_horizon_iid_apr": 0.022899,
+      "sigma_horizon_twosided_apr": 0.116073,
       "signal_z_level": -4.0666,
       "waterfall": {
         "carry_uncertainty_buffer_bps": 19.421,
@@ -1075,13 +1076,13 @@
     {
       "day": 25,
       "forward_net_edge_bps": 154.4961,
-      "perp_net_edge_bps": 135.4792,
+      "perp_net_edge_bps": 136.3293,
       "selected": "forward_basis_v1"
     },
     {
       "day": 30,
       "forward_net_edge_bps": 167.7755,
-      "perp_net_edge_bps": 99.5801,
+      "perp_net_edge_bps": 153.2347,
       "selected": "forward_basis_v1"
     },
     {
@@ -1099,14 +1100,14 @@
     {
       "day": 45,
       "forward_net_edge_bps": 149.0982,
-      "perp_net_edge_bps": 159.0861,
+      "perp_net_edge_bps": 162.0013,
       "selected": "perp_carry_v1"
     },
     {
       "day": 50,
       "forward_net_edge_bps": 159.705,
-      "perp_net_edge_bps": 155.6602,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 172.787,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 55,
@@ -1117,127 +1118,127 @@
     {
       "day": 60,
       "forward_net_edge_bps": 166.7342,
-      "perp_net_edge_bps": 162.1883,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 177.7906,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 65,
       "forward_net_edge_bps": 175.5711,
-      "perp_net_edge_bps": 160.3471,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 193.4755,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 70,
       "forward_net_edge_bps": 185.2993,
-      "perp_net_edge_bps": 139.6355,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 204.5021,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 75,
       "forward_net_edge_bps": 186.9234,
-      "perp_net_edge_bps": 167.4855,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 200.1268,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 80,
       "forward_net_edge_bps": 197.31,
-      "perp_net_edge_bps": 157.3634,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 206.5039,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 85,
       "forward_net_edge_bps": 195.5898,
-      "perp_net_edge_bps": 146.7941,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 228.0493,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 90,
       "forward_net_edge_bps": 212.2027,
-      "perp_net_edge_bps": 125.8145,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 223.8021,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 95,
       "forward_net_edge_bps": 212.9829,
-      "perp_net_edge_bps": 164.3845,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 217.8427,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 100,
       "forward_net_edge_bps": 218.721,
-      "perp_net_edge_bps": 183.7301,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 231.8362,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 105,
       "forward_net_edge_bps": 237.2404,
-      "perp_net_edge_bps": 180.4973,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 260.5725,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 110,
       "forward_net_edge_bps": 260.0705,
-      "perp_net_edge_bps": 178.1389,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 293.0341,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 115,
       "forward_net_edge_bps": 265.0155,
-      "perp_net_edge_bps": 217.5648,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 300.3288,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 120,
       "forward_net_edge_bps": 280.3053,
-      "perp_net_edge_bps": 216.27,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 301.6946,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 125,
       "forward_net_edge_bps": 299.7668,
-      "perp_net_edge_bps": 217.6952,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 314.9324,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 130,
       "forward_net_edge_bps": 302.201,
-      "perp_net_edge_bps": 217.4175,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 324.9871,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 135,
       "forward_net_edge_bps": 310.7725,
-      "perp_net_edge_bps": 235.4306,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 325.4308,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 140,
       "forward_net_edge_bps": 343.5627,
-      "perp_net_edge_bps": 262.7378,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 345.8246,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 145,
       "forward_net_edge_bps": 330.3755,
-      "perp_net_edge_bps": 260.2988,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 347.0156,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 150,
       "forward_net_edge_bps": 341.0892,
-      "perp_net_edge_bps": 286.2101,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 360.6291,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 155,
       "forward_net_edge_bps": 346.3321,
-      "perp_net_edge_bps": 318.2643,
-      "selected": "forward_basis_v1"
+      "perp_net_edge_bps": 358.3825,
+      "selected": "perp_carry_v1"
     },
     {
       "day": 160,
       "forward_net_edge_bps": 337.5739,
-      "perp_net_edge_bps": 337.98,
+      "perp_net_edge_bps": 346.8964,
       "selected": "perp_carry_v1"
     },
     {

@@ -39,6 +39,28 @@ v0.4.0 additions (decision record docs/decision-record-v0.4.0.md):
   frozen v0.3 journals, verbatim and labeled in-sample-disclosed;
 - predictions P1..P5 from the v0.4 decision record, scored as measured.
 
+v0.5.0 additions (decision record docs/decision-record-v0.5.0.md):
+- QUADRUPLE z-gate calibration + the honest-cost panel: σ_level (v0.2 audit) +
+  σ_H iid-block (v0.3 audit) + σ_H two-sided trend (v0.4 audit) + σ_H
+  adverse-side (the redefined v0.5 diagnostic — ONE-SIDED downside breach,
+  nominal 2.28%) + the upside-surprise panel (the un-charged favorable drift,
+  reported as cost, explicitly NOT a calibration target);
+- HOLDOUT LADDER: seeds 1..60 = screening set (the frozen v0.4 journals the
+  candidate was screened on — both v0.4 sets are now decision-touched, so the
+  ladder EXTENDS), seeds 61..80 = holdout, never used in any decision in any
+  engine version; the ladder never re-rolls;
+- RANKING reported pooled (1..80) AND screening (1..60) AND like-for-like
+  (1..40 — the seed set the v0.3 60.2% and v0.4 11.4% baselines were measured
+  on; used ONLY for the P3/P5 verdicts, never for a second headline);
+- CONTEST DAY-BUCKET decomposition of the full-window hit-rate: window
+  avoids collapse (d ≤ COLLAPSE_START − tenor) vs window touches collapse —
+  the boundary is derived from the pre-registered regime boundary, not tuned;
+- ESTIMATOR SCREENING block: the asymmetric-buffer candidates (S symmetric
+  v0.4 baseline vs G1 adverse-side) measured on the frozen v0.4 journals,
+  verbatim and labeled in-sample-disclosed;
+- predictions P1..P5 from the v0.5 decision record, scored as measured — P4
+  is the compound honest-price prediction (day-bucket gap AND upside panel).
+
 A stale per-seed journal is removed before its run so that one sweep = one
 file = one audit trail (the journal itself appends; nothing here weakens its
 write-time validation). Runs are bit-reproducible: seeds are explicit, no
@@ -74,20 +96,31 @@ from quant_arb.pipeline import (                    # noqa: E402
 )
 from quant_arb.research.stats import dist_obj, mean  # noqa: E402
 
-ENGINE_VERSION = "0.4.0"
+ENGINE_VERSION = "0.5.0"
 
 # Nominal two-sided breach probability of a ±2σ band under a normal
-# estimator (2·(1−Φ(2)) ≈ 4.55%) — the reference both empirical calibration
-# panels are compared against.
+# estimator (2·(1−Φ(2)) ≈ 4.55%) — the reference the two-sided AUDIT panels
+# are compared against.
 NOMINAL_TWO_SIDED_PCT = 4.55
 
-# World-v2 regime boundaries (decision record C1) — used ONLY for the P2
-# phase split in the predictions verdict, never inside the pipeline.
+# Nominal ONE-SIDED breach probability of a −2σ adverse band under a normal
+# estimator (1−Φ(2) ≈ 2.28%) — the reference the v0.5 redefined (adverse-side)
+# panel is compared against.
+NOMINAL_ONE_SIDED_PCT = 2.28
+
+# World-v2 regime boundaries (decision record C1) — used ONLY for the phase
+# split in the ranking/phase predictions and the pre-registered contest
+# day-bucket boundary (COLLAPSE_START − tenor), never inside the pipeline.
 COLLAPSE_START_DAY = 150
+
+# Like-for-like seed set (1..40) — the seed set the v0.3 60.2% hit-rate and
+# v0.4 11.4% hit-rate baselines were measured on. Used ONLY for the P3/P5
+# verdicts, never for a second headline (decision record v0.5.0 C4).
+LIKE_FOR_LIKE_SEEDS = 40
 
 BANNER = """
 ================================================================
- quant-arb-engine · research sweep v0.4 (SYNTHETIC, paper-only)
+ quant-arb-engine · research sweep v0.5 (SYNTHETIC, paper-only)
  multi-seed machinery diagnostics on deterministic mock worlds
  — nothing here trades, nothing here spends, nothing here
  claims an edge. Numbers validate CODE PATHS, never markets.
@@ -171,28 +204,36 @@ def settled_row(payload: dict, size_usd: float) -> dict:
 
 
 def calibration_panels(seed_worlds: list, threshold_z: float, holdout_from: int) -> dict:
-    """Triple σ honesty diagnostic, re-derived from the journals alone.
+    """Quadruple σ honesty diagnostic + the honest-cost panel, re-derived from
+    the journals alone (decision record v0.5.0 C4).
 
     ``seed_worlds`` = [(settled_payloads, funding_daily_map, seed), ...] — every
     seed is evaluated against ITS OWN world's funding stream. For every settled
     position with a FULL funding_daily window:
       window_mean_apr = mean(apr_printed over (opened_day, settle_day])
-      LEVEL       panel breach ⇔ |window_mean − ex_ante_apr| > z · σ_level
-      HORIZON-IID panel breach ⇔ |window_mean − ex_ante_apr| > z · σ_H(iid-block)
-      HORIZON     panel breach ⇔ |window_mean − ex_ante_apr| > z · σ_H(trend-aware)
-    The level panel reproduces the v0.2.0 finding and the iid panel the v0.3.0
-    finding (both kept for audit); the trend panel is the v0.4.0 redefined
-    diagnostic. Panels are computed POOLED, on the SCREENING SET (seeds
-    < holdout_from — the seeds the estimator candidates were screened on) and
-    on the HOLDOUT (seeds ≥ holdout_from — never used in any decision). The
-    trend panel additionally decomposes breaches by entry-history length
-    (≤45 vs >45 observed days): the pre-registered claim is that the residual
-    miscalibration concentrates where the visible history is too short.
+      LEVEL            breach ⇔ |window_mean − ex_ante_apr| > z · σ_level
+      HORIZON-IID      breach ⇔ |window_mean − ex_ante_apr| > z · σ_H(iid-block)
+      HORIZON-TWOSIDED breach ⇔ |window_mean − ex_ante_apr| > z · σ_H(|β̂|·H/2)
+      HORIZON (v0.5)   breach ⇔  window_mean − ex_ante_apr  < −z · σ_down
+      HORIZON-UPSIDE   breach ⇔  window_mean − ex_ante_apr  > +z · σ_down
+    The level/iid/two-sided panels reproduce the v0.2/v0.3/v0.4 findings (all
+    kept for audit); the adverse-side panel is the v0.5.0 redefined diagnostic
+    (one-sided, nominal 2.28%); the upside panel reports the un-charged
+    favorable drift as the honest cost of the optimistic bound — explicitly NOT
+    a calibration target. Panels are computed POOLED, on the SCREENING SET
+    (seeds < holdout_from — the seeds the estimator candidates were screened
+    on) and on the HOLDOUT (seeds ≥ holdout_from — never used in any decision).
+    Every panel decomposes breaches by entry-history length (≤45 vs >45
+    observed days); the pre-registered decomposition of record is the one on
+    the adverse-side panel.
     """
+    # (panel key, research_compare σ key, label, sidedness)
     panels_spec = (
-        ("panel_level", "ex_ante_sigma_apr", "level"),
-        ("panel_horizon_iid", "ex_ante_sigma_horizon_iid_apr", "horizon_iid"),
-        ("panel_horizon", "ex_ante_sigma_horizon_apr", "horizon_trend"),
+        ("panel_level", "ex_ante_sigma_apr", "level", "two"),
+        ("panel_horizon_iid", "ex_ante_sigma_horizon_iid_apr", "horizon_iid", "two"),
+        ("panel_horizon_twosided", "ex_ante_sigma_horizon_twosided_apr", "horizon_twosided", "two"),
+        ("panel_horizon", "ex_ante_sigma_horizon_apr", "horizon_adverse", "down"),
+        ("panel_horizon_upside", "ex_ante_sigma_horizon_apr", "horizon_adverse_upside", "up"),
     )
     subsets = {
         "pooled": lambda seed: True,
@@ -201,7 +242,7 @@ def calibration_panels(seed_worlds: list, threshold_z: float, holdout_from: int)
     }
     out: dict = {}
     for subset_name, keep in subsets.items():
-        for panel_name, sig_key, label in panels_spec:
+        for panel_name, sig_key, label, sided in panels_spec:
             checks = breaches = 0
             eh = {"short_history_le_45d": [0, 0], "long_history_gt_45d": [0, 0]}
             for settled_payloads, funding_daily, seed in seed_worlds:
@@ -222,9 +263,13 @@ def calibration_panels(seed_worlds: list, threshold_z: float, holdout_from: int)
                                         if d <= p["opened_day"]])
                     bucket = ("short_history_le_45d" if n_entry_days <= 45
                               else "long_history_gt_45d")
+                    diff = wmean - ex_apr
+                    hit = {"two": abs(diff) > threshold_z * ex_sig,
+                           "down": diff < -threshold_z * ex_sig,
+                           "up": diff > threshold_z * ex_sig}[sided]
                     checks += 1
                     eh[bucket][0] += 1
-                    if abs(wmean - ex_apr) > threshold_z * ex_sig:
+                    if hit:
                         breaches += 1
                         eh[bucket][1] += 1
             entry_history = {}
@@ -235,6 +280,8 @@ def calibration_panels(seed_worlds: list, threshold_z: float, holdout_from: int)
                 }
             out.setdefault(subset_name, {})[panel_name] = {
                 "sigma": label,
+                "sided": {"two": "two-sided", "down": "one-sided downside",
+                          "up": "one-sided upside"}[sided],
                 "n_checks": checks,
                 "n_breaches": breaches,
                 "empirical_breach_pct": round(breaches / checks * 100.0, 1) if checks else None,
@@ -253,7 +300,13 @@ def ranking_stats_accum(acc: dict, fam_by_day: dict, funding_daily: dict,
       perp (floating)    = mean(apr_printed over the window) — from funding_daily
     Hit = the SELECTED family's ex-post carry beat the forgone family's.
     Truncated contests (window crosses the run end) are excluded and counted.
+
+    v0.5.0 (C4): every EVALUATED contest is also bucketed by whether its
+    window touches the pre-registered collapse regime — boundary
+    COLLAPSE_START − tenor (derived from the regime boundary, not tuned):
+      avoids  ⇔ day ≤ 150 − tenor      touches ⇔ day > 150 − tenor
     """
+    bucket_boundary = COLLAPSE_START_DAY - tenor
     for day, fams in fam_by_day.items():
         f, pe = fams.get(FORWARD_FAMILY), fams.get(PERP_FAMILY)
         if not (f and pe and f["gated"] and pe["gated"]):
@@ -282,18 +335,31 @@ def ranking_stats_accum(acc: dict, fam_by_day: dict, funding_daily: dict,
             acc["truncated"] += 1        # cannot evaluate without both carries
             continue
         acc["contests"] += 1
+        bucket = "avoids" if day <= bucket_boundary else "touches"
+        acc[f"contests_{bucket}"] += 1
         sel_forward = bool(f["selected"])
         sel_carry, forgone_carry = (fwd_carry, perp_carry) if sel_forward else (perp_carry, fwd_carry)
         if sel_carry > forgone_carry + 1e-12:
             acc["hits"] += 1
+            acc[f"hits_{bucket}"] += 1
         elif sel_carry < forgone_carry - 1e-12:
             acc["misses"] += 1
         else:
             acc["ties"] += 1
 
 
-def ranking_finalize(acc: dict) -> dict:
+def ranking_finalize(acc: dict, tenor: int) -> dict:
     contests = acc["contests"]
+    def _bucket(name: str) -> dict:
+        ck = acc.get(f"contests_{name}", 0)
+        hi = acc.get(f"hits_{name}", 0)
+        return {
+            "n_contests": ck,
+            "hits": hi,
+            "hit_rate_pct": round(hi / ck * 100.0, 1) if ck else None,
+            "definition": ("window avoids collapse" if name == "avoids"
+                            else "window touches collapse"),
+        }
     return {
         "contested_days_total": acc["contested_total"],
         "contested_days_evaluated": contests,
@@ -302,6 +368,14 @@ def ranking_finalize(acc: dict) -> dict:
         "misses": acc["misses"],
         "ties": acc["ties"],
         "hit_rate_pct": round(acc["hits"] / contests * 100.0, 1) if contests else None,
+        "day_bucket": {
+            "boundary_day": COLLAPSE_START_DAY - tenor,
+            "window_avoids_collapse": _bucket("avoids"),
+            "window_touches_collapse": _bucket("touches"),
+            "definition": ("contest day split at COLLAPSE_START(150) − tenor, derived "
+                           "from the pre-registered regime boundary, not tuned: avoids ⇔ "
+                           "the full (d, d+tenor] window sits before the collapse phase"),
+        },
         "forward_selection_share_ramp_pct": (round(acc["fwd_selected_ramp"] / acc["contests_ramp"] * 100.0, 1)
                                              if acc["contests_ramp"] else None),
         "forward_selection_share_collapse_pct": (round(acc["fwd_selected_collapse"] / acc["contests_collapse"] * 100.0, 1)
@@ -332,10 +406,10 @@ def _d(dist: dict) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="quant-arb-engine multi-seed research sweep (synthetic, paper-only)")
-    ap.add_argument("--seeds", type=int, default=60,
-                    help="N → seeds 1..N (default 60: screening 1..40 + holdout 41..60)")
-    ap.add_argument("--holdout-from", type=int, default=41,
-                    help="first holdout seed (pre-registered 41; seeds below = screening set)")
+    ap.add_argument("--seeds", type=int, default=80,
+                    help="N → seeds 1..N (default 80: screening 1..60 + holdout 61..80)")
+    ap.add_argument("--holdout-from", type=int, default=61,
+                    help="first holdout seed (pre-registered 61; seeds below = screening set)")
     ap.add_argument("--days", type=int, default=200)
     ap.add_argument("--tenor", type=int, default=90)
     ap.add_argument("--size", type=float, default=100_000.0,
@@ -374,11 +448,15 @@ def main() -> int:
     seed_worlds: list = []                    # [(settled_payloads, funding_daily, seed), ...]
     rank_acc = {"contested_total": 0, "contests": 0, "truncated": 0, "hits": 0, "misses": 0, "ties": 0,
                 "contests_ramp": 0, "contests_collapse": 0,
-                "fwd_selected_ramp": 0, "fwd_selected_collapse": 0}
-    # screening-set twin (seeds 1..holdout_from-1) — the LIKE-FOR-LIKE seed set
-    # the v0.3 baselines (60.2 % hit-rate, 79.5 % collapse share) were measured
-    # on; used ONLY for the P4/P5 verdicts, never for a second headline.
+                "fwd_selected_ramp": 0, "fwd_selected_collapse": 0,
+                "contests_avoids": 0, "hits_avoids": 0, "contests_touches": 0, "hits_touches": 0}
+    # screening-set twin (seeds 1..holdout_from-1) — the frozen v0.4 journals
+    # the asymmetric-buffer candidate was screened on (disclosed in-sample).
     rank_acc_screening = {k: 0 for k in rank_acc}
+    # like-for-like twin (seeds 1..40) — the seed set the v0.3 60.2 % and v0.4
+    # 11.4 % baselines were measured on; used ONLY for the P3/P5 verdicts,
+    # never for a second headline (decision record v0.5.0 C4).
+    rank_acc_like = {k: 0 for k in rank_acc}
     demo = None
 
     for seed in seeds:
@@ -416,6 +494,8 @@ def main() -> int:
         ranking_stats_accum(rank_acc, fam_by_day, fd, args.tenor, args.days)
         if seed < args.holdout_from:
             ranking_stats_accum(rank_acc_screening, fam_by_day, fd, args.tenor, args.days)
+        if seed <= LIKE_FOR_LIKE_SEEDS:
+            ranking_stats_accum(rank_acc_like, fam_by_day, fd, args.tenor, args.days)
         seed_worlds.append((settled_payloads, fd, seed))
 
         per_seed.append({
@@ -482,14 +562,20 @@ def main() -> int:
                                                   key=lambda kv: (-kv[1], kv[0]))]
 
     # ranking: pooled across every seed's own world (contests vs own funding
-    # stream) + the screening-set twin for the like-for-like P4/P5 verdicts
-    ranking = ranking_finalize(rank_acc)
-    ranking_screening = ranking_finalize(rank_acc_screening)
+    # stream) + the screening-set twin + the like-for-like twin for the
+    # P3/P5 verdicts against the v0.3/v0.4 baselines
+    ranking = ranking_finalize(rank_acc, args.tenor)
+    ranking_screening = ranking_finalize(rank_acc_screening, args.tenor)
+    ranking_like = ranking_finalize(rank_acc_like, args.tenor)
 
     # per-family settled distributions
     fam_rows = {FORWARD_FAMILY: [r for r in pooled_rows if r["strategy_id"] == FORWARD_FAMILY],
                 PERP_FAMILY: [r for r in pooled_rows if r["strategy_id"] == PERP_FAMILY]}
-    family_census = {}
+    family_census = {
+        "_definition": ("opened = opens that SETTLED within the run (the settled "
+                        "population; the still-open remainder is in totals.still_open) — "
+                        "same semantics as every engine version since v0.3.0"),
+    }
     for sid in (FORWARD_FAMILY, PERP_FAMILY):
         rows_f = fam_rows[sid]
         pnl = [r["pnl_pct_of_notional"] for r in rows_f if r["pnl_pct_of_notional"] is not None]
@@ -522,13 +608,18 @@ def main() -> int:
     pooled = panels["pooled"]
     level_b = pooled["panel_level"]["empirical_breach_pct"]
     iid_b = pooled["panel_horizon_iid"]["empirical_breach_pct"]
-    trend_b = pooled["panel_horizon"]["empirical_breach_pct"]
+    twosided_b = pooled["panel_horizon_twosided"]["empirical_breach_pct"]
+    down_b = pooled["panel_horizon"]["empirical_breach_pct"]
+    up_b = pooled["panel_horizon_upside"]["empirical_breach_pct"]
     z_gate = {
         "threshold_z": threshold_z,
         "nominal_two_sided_pct": NOMINAL_TWO_SIDED_PCT,
+        "nominal_one_sided_pct": NOMINAL_ONE_SIDED_PCT,
         "panel_level": pooled["panel_level"],
         "panel_horizon_iid": pooled["panel_horizon_iid"],
+        "panel_horizon_twosided": pooled["panel_horizon_twosided"],
         "panel_horizon": pooled["panel_horizon"],
+        "panel_horizon_upside": pooled["panel_horizon_upside"],
         "holdout_split": {
             "holdout_seeds": f"{args.holdout_from}..{args.seeds}",
             "screening_set_seeds": f"1..{args.holdout_from - 1}",
@@ -536,34 +627,49 @@ def main() -> int:
             "holdout_panel_horizon": panels["holdout"]["panel_horizon"],
             "screening_set_panel_horizon_iid": panels["screening_set"]["panel_horizon_iid"],
             "holdout_panel_horizon_iid": panels["holdout"]["panel_horizon_iid"],
-            "definition": "screening set = the seeds the estimator candidates were "
-                          "screened on (disclosed in-sample); holdout = never used in "
-                          "any decision before this sweep",
+            "screening_set_panel_horizon_twosided": panels["screening_set"]["panel_horizon_twosided"],
+            "holdout_panel_horizon_twosided": panels["holdout"]["panel_horizon_twosided"],
+            "screening_set_panel_horizon_upside": panels["screening_set"]["panel_horizon_upside"],
+            "holdout_panel_horizon_upside": panels["holdout"]["panel_horizon_upside"],
+            "definition": ("holdout ladder: seeds 1..60 = the frozen v0.4 journals the "
+                           "candidate was screened on (both v0.4 sets are now "
+                           "decision-touched, so the ladder EXTENDS — it never re-rolls); "
+                           "seeds 61..80 = holdout, never used in any decision in any "
+                           "engine version"),
         },
         "estimator_screening": {
-            "source": "frozen v0.3 journals @ e250695 — research/exploration/screen_sigma_v04.py",
-            "disclosure": "in-sample candidate screening, performed BEFORE the v0.4 decision record was sealed",
+            "source": "frozen v0.4 journals @ 2b12b34 — research/exploration/screen_asym_v05.py",
+            "disclosure": "in-sample candidate screening on the same generator, performed "
+                          "BEFORE the v0.5 decision record was sealed; the holdout design "
+                          "in C4 is the mitigation",
             "candidates": [
-                {"id": "A_iid_block", "estimand": "overlapping-window mean dispersion, sqrt(H/L) extrapolated (v0.3 gate)",
-                 "breach_pct": 35.0, "mean_sigma_pp": 1.74, "verdict": "baseline — kept as the audit value"},
-                {"id": "B_hac", "estimand": "Newey-West Bartlett long-run variance, sqrt(LRV/H)",
-                 "breach_pct": 73.2, "mean_sigma_pp": 0.53, "verdict": "REJECTED — stationary-mean estimand, wrong for a drifting level"},
-                {"id": "C_local_level", "estimand": "two-scale window-mean increment decomposition",
-                 "breach_pct": 49.6, "mean_sigma_pp": 1.90, "verdict": "REJECTED — increments understate a near-deterministic trend"},
-                {"id": "F_trend", "estimand": "A + |beta_hat|·H/2 trend-continuation term (decision record C1)",
-                 "breach_pct": 10.4, "mean_sigma_pp": 5.00, "verdict": "CHOSEN"},
+                {"id": "S_symmetric", "estimand": "v0.4 baseline — both trend directions charged |beta_hat|·H/2",
+                 "two_sided_breach_pct": 11.0, "mean_sigma_pp": 4.81,
+                 "verdict": "baseline — kept as the audit value (the pessimistic bound of the "
+                            "reversal-ignorance interval)"},
+                {"id": "G1_adverse_side", "estimand": "falling trend charged in full max(0,−beta_hat)·H/2; "
+                                            "rising uncharged (decision record C1)",
+                 "downside_breach_pct": 0.0, "upside_surprise_pct": 21.2, "mean_sigma_pp": 3.23,
+                 "verdict": "CHOSEN — the optimistic bound; no interior weight is grounded, "
+                            "so none is used"},
             ],
-            "residual_note": "29/29 residual breaches positive-direction (EWMA lags the ramp); "
-                             "28/29 at entries on days 20-40 where the visible ramp is too short "
-                             "for any backward-looking slope measurement",
+            "residual_anatomy": "all 46 v0.4 residual breaches POSITIVE-direction — on the "
+                                 "v0.4 population the symmetric term's protective work was "
+                                 "pure upside over-pricing (the measured anatomy of the P4 "
+                                 "refutation); would-be re-ranking under G1: hit-rate 62.8 % "
+                                 "pooled / 61.9 % seeds 1..40, collapse forward share 69.7 % "
+                                 "(v0.4: 95.7 %) — the beta_hat regime-turn lag (~10–15 d) "
+                                 "measured as the honest price",
         },
-        "definition": ("share of settled entries (full funding_daily window) where "
-                       "|window-mean APR − ex-ante APR| > z·σ; σ_level = instantaneous "
-                       "estimator standard error (the v0.2.0 finding, kept for audit), "
-                       "σ_H(iid) = overlapping-window horizon dispersion (the v0.3.0 "
-                       "finding, kept for audit), σ_H(trend) = trend-aware horizon σ "
-                       "— dispersion + |β̂|·H/2 trend-continuation exposure (the v0.4.0 "
-                       "redefined diagnostic, decision record v0.4.0 C1)"),
+        "definition": ("share of settled entries (full funding_daily window) where the "
+                       "stated band is breached; σ_level = instantaneous estimator standard "
+                       "error (the v0.2.0 finding, kept for audit), σ_H(iid) = overlapping-window "
+                       "horizon dispersion (the v0.3.0 finding, kept for audit), σ_H(twosided) = "
+                       "iid + |β̂|·H/2 two-sided trend charge (the v0.4.0 finding, kept for audit), "
+                       "σ_down = iid + max(0,−β̂)·H/2 adverse-side trend charge (the v0.5.0 "
+                       "redefined diagnostic — ONE-SIDED downside breach, nominal 2.28%). The "
+                       "upside panel is the honest cost of the optimistic bound, reported, "
+                       "NOT a calibration target"),
     }
 
     # -------------------------------------------- predictions P1..P5 (as measured)
@@ -574,17 +680,31 @@ def main() -> int:
     perp_evals = fam_totals[f"{PERP_FAMILY}:evals"]
     perp_gated_share = (round(fam_totals[f"{PERP_FAMILY}:gated_in"] / perp_evals * 100.0, 1)
                         if perp_evals else None)
+    hit_like = ranking_like["hit_rate_pct"]
     hit_screening = ranking_screening["hit_rate_pct"]
+    hit_pooled = ranking["hit_rate_pct"]
+    avoids_hr = ranking["day_bucket"]["window_avoids_collapse"]["hit_rate_pct"]
+    touches_hr = ranking["day_bucket"]["window_touches_collapse"]["hit_rate_pct"]
+    fshare_collapse_like = ranking_like["forward_selection_share_collapse_pct"]
     fshare_collapse_screening = ranking_screening["forward_selection_share_collapse_pct"]
+    p4a_ok = (avoids_hr is not None and touches_hr is not None
+              and avoids_hr <= touches_hr - 20.0)
+    p4b_ok = up_b is not None and up_b > 15.0
+    p4_verdict = ("SUPPORTED" if (p4a_ok and p4b_ok)
+                  else "REFUTED" if (avoids_hr is not None and touches_hr is not None
+                                     and up_b is not None) else "UNDECIDED")
     predictions = {
         "P1": {
-            "statement": "pooled trend-panel breach ≤ 15% (v0.3: 35.0%; disclosed screening: 10.4%)",
-            "pooled_trend_breach_pct": trend_b,
-            "verdict": ("SUPPORTED" if trend_b is not None and trend_b <= 15.0
-                        else "REJECTED" if trend_b is not None else "UNDECIDED"),
+            "statement": "pooled downside-panel breach ≤ 8% (one-sided nominal 2.28%; disclosed "
+                          "would-be 0.0% on the v0.4 settle population — the v0.5 population is "
+                          "perp-heavy and includes late-ramp opens whose windows touch the collapse)",
+            "pooled_downside_breach_pct": down_b,
+            "verdict": ("SUPPORTED" if down_b is not None and down_b <= 8.0
+                        else "REJECTED" if down_b is not None else "UNDECIDED"),
         },
         "P2": {
-            "statement": "holdout (41..60) trend-panel breach within ±6 pp of the screening-set (1..40) breach",
+            "statement": "holdout (61..80) downside-panel breach within ±6 pp of the screening "
+                          "set (1..60) — the estimator is not seed-idiosyncratic",
             "screening_set_breach_pct": sb,
             "holdout_breach_pct": hb,
             "delta_pp": None if (sb is None or hb is None) else round(hb - sb, 1),
@@ -592,25 +712,41 @@ def main() -> int:
                         else "REJECTED" if (sb is not None and hb is not None) else "UNDECIDED"),
         },
         "P3": {
-            "statement": "perp gated-in share of family evals ≤ 75% (v0.3: 99.4%) — the honest σ makes the persistence gate materially binding",
-            "perp_gated_in_share_pct": perp_gated_share,
-            "verdict": ("SUPPORTED" if perp_gated_share is not None and perp_gated_share <= 75.0
-                        else "REFUTED" if perp_gated_share is not None else "UNDECIDED"),
+            "statement": "like-for-like (seeds 1..40) full-window contest hit-rate ≥ 50% "
+                          "(v0.4: 11.4%; v0.3: 60.2%; disclosed would-be: 61.9%) — recovery to "
+                          "a majority-correct ranking, claimed only at the majority bar",
+            "hit_rate_pct": hit_like,
+            "v0_4_baseline_pct": 11.4,
+            "v0_3_baseline_pct": 60.2,
+            "verdict": ("SUPPORTED" if hit_like is not None and hit_like >= 50.0
+                        else "REFUTED" if hit_like is not None else "UNDECIDED"),
         },
         "P4": {
-            "statement": "ranking hit-rate within ±5 pp of 60.2% (screening set — the like-for-like v0.3 seed set)",
-            "hit_rate_pct": hit_screening,
-            "v0_3_baseline_pct": 60.2,
-            "delta_pp": None if hit_screening is None else round(hit_screening - 60.2, 1),
-            "verdict": ("SUPPORTED" if hit_screening is not None and abs(hit_screening - 60.2) <= 5.0
-                        else "REFUTED" if hit_screening is not None else "UNDECIDED"),
+            "statement": "the honest price, COMPOUND — (a) hit-rate on window-avoids-collapse "
+                          "contests ≤ hit-rate on window-touches contests − 20 pp (the early-flat "
+                          "information limit concentrates the misses) AND (b) the upside surprise "
+                          "panel > 15% (the un-charged favorable drift visible as frequent "
+                          "positive surprises — the asymmetry mechanism's signature); measured on "
+                          "the pooled (1..80) ranking, screening/like-for-like splits reported "
+                          "alongside; reported, never patched",
+            "avoids_hit_rate_pct": avoids_hr,
+            "touches_hit_rate_pct": touches_hr,
+            "gap_pp": None if (avoids_hr is None or touches_hr is None)
+                      else round(avoids_hr - touches_hr, 1),
+            "part_a_holds": p4a_ok,
+            "upside_surprise_pct": up_b,
+            "part_b_holds": p4b_ok,
+            "verdict": p4_verdict,
         },
         "P5": {
-            "statement": "forward share of contested selections in the collapse phase ≥ 70% (v0.3: 79.5%; screening set)",
-            "forward_share_collapse_pct": fshare_collapse_screening,
-            "verdict": ("SUPPORTED" if (fshare_collapse_screening is not None
-                                        and fshare_collapse_screening >= 70.0)
-                        else "NOT SUPPORTED" if fshare_collapse_screening is not None else "UNDECIDED"),
+            "statement": "forward share of contested selections in the collapse phase ≥ 60% "
+                          "(v0.4: 95.7%; disclosed would-be: 69.7% — the transition leak is "
+                          "priced in; the claim is the signed charge still takes over after the "
+                          "β̂ lag, keeping the collapse majority-forward); like-for-like (1..40)",
+            "forward_share_collapse_pct": fshare_collapse_like,
+            "verdict": ("SUPPORTED" if (fshare_collapse_like is not None
+                                        and fshare_collapse_like >= 60.0)
+                        else "NOT SUPPORTED" if fshare_collapse_like is not None else "UNDECIDED"),
         },
     }
 
@@ -637,6 +773,7 @@ def main() -> int:
             "seeds": seeds,
             "screening_set_seeds": [s for s in seeds if s < args.holdout_from],
             "holdout_seeds": [s for s in seeds if s >= args.holdout_from],
+            "like_for_like_seeds": [s for s in seeds if s <= LIKE_FOR_LIKE_SEEDS],
             "days": args.days,
             "tenor_days": args.tenor,
             "size_usd": args.size,
@@ -644,8 +781,10 @@ def main() -> int:
             "warmup_days": cfg0.warmup_days,
             "ewma_half_life_h": cfg0.ewma_half_life_h,
             "world": "v2 (ramp 8→18% d30–120, flat→150, collapse 18→4% d150–180, flat 4%)",
-            "sigma_horizon_method": "trend-aware (iid-block dispersion + |beta_hat|·H/2, "
-                                    "trend_window_days=60) — decision record v0.4.0 C1",
+            "sigma_horizon_method": "adverse-side (iid-block dispersion + max(0,−beta_hat)·H/2 "
+                                    "falling-trend charge, rising uncharged; trend_window_days=60) "
+                                    "— decision record v0.5.0 C1; the optimistic bound of the "
+                                    "reversal-ignorance interval (v0.4 was the pessimistic bound)",
         },
         "totals": totals,
         "selection_rate_pct": selection_rate_pct,
@@ -653,6 +792,8 @@ def main() -> int:
         "reject_reasons": reject_reasons,
         "family_census": family_census,
         "ranking": ranking,
+        "ranking_screening_set": ranking_screening,
+        "ranking_like_for_like": ranking_like,
         "settled_stats": settled_stats,
         "z_gate_calibration": z_gate,
         "predictions": predictions,
@@ -661,10 +802,19 @@ def main() -> int:
             "synthetic": True,
             "epistemic_note": demo["summary"]["epistemic_note"],
             "unit_rule": demo["summary"]["unit_rule"],
-            "stop_rule": "exactly ONE σ estimator change is pre-registered (v0.4.0 C1); no further "
-                        "estimator iterations inside v0.4.0 regardless of measured breach — the "
-                        "nominal is a property of a correct σ, the estimator is not a knob for "
-                        "reaching the nominal (decision record STOP RULE)",
+            "stop_rule": "exactly ONE estimator change is pre-registered (v0.5.0 C1 — the "
+                        "adverse-side charge); whatever the measured outcomes there are NO "
+                        "reversal-weight iterations, NO interior weights, NO trend-window "
+                        "retuning inside v0.5.0. If P1 fails the recorded finding is: the "
+                        "optimistic bound under-protects the adverse side even in a world whose "
+                        "reversals are rare and slow — and the answer for any real market is "
+                        "not an interior weight chosen on synthetic data but W0's real feed. "
+                        "The nominal is a property of a correct σ on the stated side; the "
+                        "estimator is not a knob for reaching the nominal (decision record "
+                        "STOP RULE)",
+            "population_note": "v0.5 settle populations are perp-heavy and differ from v0.4's — "
+                               "the frozen v0.4 numbers live at 2b12b34 and are never silently "
+                               "re-labelled; each artifact states its engine_version",
         },
     }
 
@@ -677,8 +827,8 @@ def main() -> int:
 
     # ------------------------------------------------------------ console
     print(f"sweep            : seeds 1..{args.seeds} (screening 1..{args.holdout_from - 1} + "
-          f"holdout {args.holdout_from}..{args.seeds}) · {args.days} days · "
-          f"tenor {args.tenor}d · size {args.size:,.0f} USD/position")
+          f"holdout {args.holdout_from}..{args.seeds}; like-for-like 1..{LIKE_FOR_LIKE_SEEDS}) · "
+          f"{args.days} days · tenor {args.tenor}d · size {args.size:,.0f} USD/position")
     print(f"journals         : {_rel(os.path.join(sweep_dir, 'run_seed_0001.jsonl'), repo_root)} "
           f".. run_seed_{seeds[-1]:04d}.jsonl")
     print("-" * 64)
@@ -714,26 +864,46 @@ def main() -> int:
           f"(truncated excluded {rk['truncated_excluded']}) · "
           f"hit-rate {_f(rk['hit_rate_pct'], '.1f')}% · "
           f"hits {rk['hits']} / misses {rk['misses']} / ties {rk['ties']}")
+    print(f"  by seed set   : pooled 1..{args.seeds} {_f(hit_pooled, '.1f')}% · "
+          f"screening 1..{args.holdout_from - 1} {_f(hit_screening, '.1f')}% · "
+          f"like-for-like 1..{LIKE_FOR_LIKE_SEEDS} {_f(hit_like, '.1f')}% "
+          f"(v0.4: 11.4 · v0.3: 60.2)")
+    db = rk["day_bucket"]
+    print(f"  day buckets   : avoids d≤{db['boundary_day']} {_f(db['window_avoids_collapse']['hit_rate_pct'], '.1f')}% "
+          f"({db['window_avoids_collapse']['hits']}/{db['window_avoids_collapse']['n_contests']}) · "
+          f"touches d>{db['boundary_day']} {_f(db['window_touches_collapse']['hit_rate_pct'], '.1f')}% "
+          f"({db['window_touches_collapse']['hits']}/{db['window_touches_collapse']['n_contests']})")
     print(f"  forward selected: ramp {_f(rk['forward_selection_share_ramp_pct'], '.1f')}% · "
-          f"collapse {_f(rk['forward_selection_share_collapse_pct'], '.1f')}% of contests")
-    print(f"z-gate calibration (triple panel, pooled):")
-    print(f"  σ_level      : empirical {_f(level_b, '.1f')}% over {pooled['panel_level']['n_checks']} checks "
+          f"collapse {_f(rk['forward_selection_share_collapse_pct'], '.1f')}% of contests "
+          f"(like-for-like collapse {_f(fshare_collapse_like, '.1f')}%)")
+    print(f"z-gate calibration (quadruple + honest-cost panel, pooled):")
+    print(f"  σ_level           : empirical {_f(level_b, '.1f')}% over {pooled['panel_level']['n_checks']} checks "
           f"(the v0.2.0 finding, kept for audit)")
-    print(f"  σ_H (iid)    : empirical {_f(iid_b, '.1f')}% over {pooled['panel_horizon_iid']['n_checks']} checks "
+    print(f"  σ_H (iid)         : empirical {_f(iid_b, '.1f')}% over {pooled['panel_horizon_iid']['n_checks']} checks "
           f"(the v0.3.0 finding, kept for audit)")
-    print(f"  σ_H (trend)  : empirical {_f(trend_b, '.1f')}% over {pooled['panel_horizon']['n_checks']} checks "
-          f"(v0.4.0 redefined diagnostic; nominal 2σ ≈ {NOMINAL_TWO_SIDED_PCT}%)")
+    print(f"  σ_H (two-sided)   : empirical {_f(twosided_b, '.1f')}% over {pooled['panel_horizon_twosided']['n_checks']} checks "
+          f"(the v0.4.0 finding, kept for audit; nominal 2σ ≈ {NOMINAL_TWO_SIDED_PCT}%)")
+    print(f"  σ_H (adverse)     : empirical {_f(down_b, '.1f')}% over {pooled['panel_horizon']['n_checks']} checks "
+          f"(v0.5.0 redefined, one-sided; nominal −2σ ≈ {NOMINAL_ONE_SIDED_PCT}%)")
+    print(f"  upside surprise   : empirical {_f(up_b, '.1f')}% over {pooled['panel_horizon_upside']['n_checks']} checks "
+          f"(the honest cost of the optimistic bound — NOT a calibration target)")
     eh = pooled["panel_horizon"]["entry_history"]
     for bucket, label in (("short_history_le_45d", "entry history ≤ 45d"),
                           ("long_history_gt_45d", "entry history > 45d")):
         b = eh[bucket]
         print(f"    {label:20s}: {_f(b['empirical_breach_pct'], '.1f')}% "
               f"({b['n_breaches']}/{b['n_checks']})")
-    print(f"  holdout split : screening-set {_f(sb, '.1f')}% vs holdout {_f(hb, '.1f')}% "
+    print(f"  holdout split : screening-set 1..{args.holdout_from - 1} {_f(sb, '.1f')}% vs "
+          f"holdout {args.holdout_from}..{args.seeds} {_f(hb, '.1f')}% "
           f"(Δ {_f(predictions['P2']['delta_pp'], '+.1f')} pp)")
-    print("predictions (pre-registered in the v0.4.0 decision record, scored as measured):")
+    print("predictions (pre-registered in the v0.5.0 decision record, scored as measured):")
     for pid, pv in predictions.items():
-        print(f"  {pid}: {pv['verdict']}")
+        extra = ""
+        if pid == "P4":
+            extra = (f" [a: {_f(avoids_hr, '.1f')} vs {_f(touches_hr, '.1f')} "
+                     f"(Δ {_f(predictions['P4']['gap_pp'], '+.1f')} pp) · "
+                     f"b: {_f(up_b, '.1f')}%]")
+        print(f"  {pid}: {pv['verdict']}{extra}")
     print("-" * 64)
     realized = [p["realized_usd"] for p in per_seed]
     if realized:

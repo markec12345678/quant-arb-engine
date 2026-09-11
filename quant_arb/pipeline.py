@@ -144,6 +144,10 @@ def run(cfg: RunConfig, out_path: str) -> Dict:
                     # audit value next to the trend-aware gate σ, so the sweep
                     # can show BOTH panels without reconstruction.
                     "ex_ante_sigma_horizon_iid_apr": md.get("sigma_horizon_iid_apr"),
+                    # v0.5.0 (C2): the v0.4 two-sided trend value at entry — the
+                    # audit value next to the adverse-side gate σ, so the sweep
+                    # can show the v0.4 panel without reconstruction.
+                    "ex_ante_sigma_horizon_twosided_apr": md.get("sigma_horizon_twosided_apr"),
                 }
                 journal.append("position_settled", payload)
                 settled_payloads.append(payload)

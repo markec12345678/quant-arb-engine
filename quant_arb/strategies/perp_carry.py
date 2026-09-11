@@ -22,7 +22,7 @@ import math
 from typing import List
 
 from ..edge.all_in_edge import EdgeParams, evaluate_perp_carry
-from ..edge.carry import ewma_funding, horizon_sigma_trend_apr
+from ..edge.carry import ewma_funding, horizon_sigma_downside_apr
 from ..models.opportunity import CarryEstimate, ExecutableLeg, Opportunity
 from .base import FamilyEvaluation, ScanContext
 
@@ -41,11 +41,15 @@ class PerpCarryStrategy:
 
         p = self.params
         realized_apr, sigma_level_apr = ewma_funding(ctx.funding_obs, self.ewma_half_life_h)
-        # v0.4.0 (decision record C1): trend-aware σ_H — dispersion + trend
-        # continuation exposure. The v0.3 iid-block component is journaled
-        # next to it as the audit value. One σ, one meaning, everywhere.
-        sigma_h_apr, sigma_diag = horizon_sigma_trend_apr(ctx.funding_obs, tenor_days)
+        # v0.5.0 (decision record C1): adverse-side σ_H — dispersion (in full)
+        # plus the FALLING visible trend charged at v0.4's full weight; a rising
+        # visible trend carries zero trend exposure (reversal priced at zero —
+        # the optimistic bound of the reversal-ignorance interval). The v0.4
+        # two-sided and v0.3 iid values are journaled next to it as audit. One
+        # σ, one meaning, everywhere.
+        sigma_h_apr, sigma_diag = horizon_sigma_downside_apr(ctx.funding_obs, tenor_days)
         sigma_h_iid = sigma_diag.get("sigma_iid_block", 0.0)
+        sigma_h_twosided = sigma_diag.get("sigma_twosided_apr", 0.0)
 
         spot_mid = ctx.spot_ask.ref_mid.value
         spot_ask = ctx.spot_ask.px.value
@@ -57,7 +61,8 @@ class PerpCarryStrategy:
         # Pre-registered gates (C4): horizon persistence of the floating carry
         # vs zero, AND the all-in net-edge gate. Both must pass. With no
         # horizon history (σ_H = 0) persistence is UNPROVEN, not infinite —
-        # the gate fails closed.
+        # the gate fails closed. v0.5.0: z_perp is a DOWNSIDE persistence
+        # ratio — expected carry in units of adverse-side uncertainty.
         if sigma_h_apr > 0:
             z_perp = realized_apr / sigma_h_apr
             z_gate = z_perp >= p.min_z
@@ -80,6 +85,7 @@ class PerpCarryStrategy:
             detail={
                 "expected_apr": round(realized_apr, 6),
                 "sigma_horizon_iid_apr": round(sigma_h_iid, 6),
+                "sigma_horizon_twosided_apr": round(sigma_h_twosided, 6),
                 "sigma_horizon_diag": sigma_diag,
                 "waterfall": waterfall.to_payload(),
             },
@@ -96,6 +102,7 @@ class PerpCarryStrategy:
         sigma_level_apr = ev.sigma_level_apr
         sigma_h_apr = ev.sigma_horizon_apr
         sigma_h_iid = ev.detail.get("sigma_horizon_iid_apr", 0.0)
+        sigma_h_twosided = ev.detail.get("sigma_horizon_twosided_apr", 0.0)
         gates = dict(ev.gates)
         z_perp = ev.signal_z if ev.signal_z is not None else 0.0   # gated-in implies z ≥ min_z
 
@@ -119,8 +126,8 @@ class PerpCarryStrategy:
             locked=False,
             expected_usd=expected_carry_usd,
             sigma_usd=sigma_h_apr * tenor_days / 365.0 * requested_size_usd,
-            description="floating funding carry over tenor; σ_H = trend-aware horizon σ "
-                        "(dispersion + trend-continuation exposure, v0.4.0 C1)",
+            description="floating funding carry over tenor; σ_H = adverse-side horizon σ "
+                        "(dispersion + falling-trend continuation exposure, v0.5.0 C1)",
         )
 
         confidence = min(1.0, z_perp / (2.0 * p.min_z))   # monotone in persistence
@@ -139,6 +146,7 @@ class PerpCarryStrategy:
                 "sigma_level_apr": round(sigma_level_apr, 6),
                 "sigma_horizon_apr": round(sigma_h_apr, 6),
                 "sigma_horizon_iid_apr": round(sigma_h_iid, 6),
+                "sigma_horizon_twosided_apr": round(sigma_h_twosided, 6),
                 "ref_mid": spot_mid,
                 "gates": gates,
                 "waterfall": ev.detail["waterfall"],

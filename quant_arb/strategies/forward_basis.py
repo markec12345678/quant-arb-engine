@@ -27,7 +27,7 @@ from __future__ import annotations
 from typing import List
 
 from ..edge.all_in_edge import EdgeParams, evaluate_forward_basis
-from ..edge.carry import carry_gap_z, ewma_funding, forward_implied_apr, horizon_sigma_trend_apr
+from ..edge.carry import carry_gap_z, ewma_funding, forward_implied_apr, horizon_sigma_downside_apr
 from ..models.market_data import PriceSource
 from ..models.opportunity import CarryEstimate, ExecutableLeg, Opportunity
 from .base import FamilyEvaluation, ScanContext
@@ -44,11 +44,14 @@ class ForwardBasisStrategy:
                  tenor_days: float) -> FamilyEvaluation:
         p = self.params
         realized_apr, sigma_level_apr = ewma_funding(ctx.funding_obs, self.ewma_half_life_h)
-        # v0.4.0 (C1/C2): σ_H journaled here is the SAME trend-aware estimator
+        # v0.5.0 (C1/C2): σ_H journaled here is the SAME adverse-side estimator
         # the perp family gates on — one meaning across the artifact panels.
-        # Diagnostic only for this family: the dated forward LOCKS its carry.
-        sigma_h_apr, sigma_diag = horizon_sigma_trend_apr(ctx.funding_obs, tenor_days)
+        # Diagnostic only for this family: the dated forward LOCKS its carry,
+        # so its gate structure is untouched; the v0.4 two-sided and v0.3 iid
+        # values are journaled next to it as audit components.
+        sigma_h_apr, sigma_diag = horizon_sigma_downside_apr(ctx.funding_obs, tenor_days)
         sigma_h_iid = sigma_diag.get("sigma_iid_block", 0.0)
+        sigma_h_twosided = sigma_diag.get("sigma_twosided_apr", 0.0)
 
         spot_mid = ctx.spot_ask.ref_mid.value
         spot_ask = ctx.spot_ask.px.value
@@ -79,6 +82,7 @@ class ForwardBasisStrategy:
                 "implied_apr": round(implied_apr, 6),
                 "gap_apr": round(realized_apr - implied_apr, 6),
                 "sigma_horizon_iid_apr": round(sigma_h_iid, 6),
+                "sigma_horizon_twosided_apr": round(sigma_h_twosided, 6),
                 "sigma_horizon_diag": sigma_diag,
                 "waterfall": waterfall.to_payload(),
             },
@@ -97,6 +101,7 @@ class ForwardBasisStrategy:
         sigma_level_apr = ev.sigma_level_apr
         sigma_h_apr = ev.sigma_horizon_apr
         sigma_h_iid = ev.detail.get("sigma_horizon_iid_apr", 0.0)
+        sigma_h_twosided = ev.detail.get("sigma_horizon_twosided_apr", 0.0)
         implied_apr = ev.detail["implied_apr"]
         gates = dict(ev.gates)
 
@@ -140,6 +145,7 @@ class ForwardBasisStrategy:
                 "realized_sigma_apr": round(sigma_level_apr, 6),
                 "sigma_horizon_apr": round(sigma_h_apr, 6),
                 "sigma_horizon_iid_apr": round(sigma_h_iid, 6),
+                "sigma_horizon_twosided_apr": round(sigma_h_twosided, 6),
                 "forward_implied_apr": implied_apr,
                 "gap_apr": round(realized_apr - implied_apr, 6),
                 "signal_z_level": round(z_level, 4),
