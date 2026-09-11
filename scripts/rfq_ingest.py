@@ -52,6 +52,8 @@ def main() -> int:
     ap.add_argument("--n", type=int, default=200, help="synthetic provider: record count")
     ap.add_argument("--seed", type=int, default=7, help="synthetic provider: RNG seed")
     ap.add_argument("--journal", default=DEFAULT_JOURNAL)
+    ap.add_argument("--status", default=DEFAULT_STATUS,
+                    help="derived status artifact path (refreshed after ingest)")
     ap.add_argument("--smoke-journal", action="store_true",
                     help="target the tracked synthetic smoke journal")
     ap.add_argument("--keep-going", action="store_true",
@@ -108,13 +110,13 @@ def main() -> int:
     print(f"[rfq-ingest] appended={run['appended']} skipped={run['skipped']}")
     for err in run["skip_errors"]:
         print(f"  skip: {err['error']}")
-    status = write_status(journal, DEFAULT_STATUS, extra={
+    status = write_status(journal, args.status, extra={
         "op": "ingest", "provider": run["provider"], "appended": run["appended"],
         "skipped": run["skipped"]})
     print(f"[rfq-ingest] status: lines={status['integrity']['lines']} "
           f"head={status['integrity']['head_hash'][:16]}… "
           f"sources={status['integrity']['sources']}")
-    print(f"[rfq-ingest] artifact: {os.path.relpath(DEFAULT_STATUS, REPO_ROOT)}")
+    print(f"[rfq-ingest] artifact: {os.path.relpath(args.status, REPO_ROOT)}")
     return 0
 
 

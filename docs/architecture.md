@@ -123,7 +123,10 @@ seed changes the numbers; the invariants do not change.
    `status_refresh:"stale"`, never a fake ingestion failure), honest 500
    surface (class travels, traceback doesn't); authenticated-REST poller is a
    documented slot). The invariant checks are tracked and reproducible from
-   the repo: `research/exploration/verify_w0_invariants.py` (100 checks).
+   the repo: `research/exploration/verify_w0_invariants.py` (103 checks).
+   The operational sequence for the real-feed day — including a full
+   executable dress rehearsal on stand-in data (`scripts/rehearse_first_feed.py`)
+   — is the runbook: `docs/runbook-first-feed.md`.
 2. **W1 real feed research** — the **journal replayer EXISTS (v0.6.2)**:
    `quant_arb/feeds/journal_replay.py` (sealed `docs/w1-replay-adapter.md` —
    mapping M-1…M-10, source wall at the Price layer, funding/settlement

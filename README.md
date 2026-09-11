@@ -82,7 +82,7 @@ Module map:
 | `scripts/research_sweep.py` | Multi-seed sweep CLI (v0.5: 80 seeds = screening 1..60 + holdout 61..80 + like-for-like 1..40); overwrites the stable `run-latest.json` / `sweep-latest.json` derived summaries for the tower |
 | `quant_arb/rfq/` | **W0 (v0.6): the real-world data layer** — `schema.py` `ExternalRFQ` (the 15 user-specified fields + the `source` epistemic wall + verbatim `raw`, write-time invariants R-1…R-13), `journal.py` immutable hash-chained raw journal (tamper/reorder/insertion detection; head-vs-status truncation bound), `edge.py` deterministic ALL-IN EDGE accounting (I-4 descendant: fees charged exactly once), `replay.py` descriptive reporting |
 | `quant_arb/rfq/providers/` | Pluggable adapters — `file_ingest.py` (REAL: desk exports JSONL/JSON/CSV), `webhook.py` (REAL: push receiver, one command when a provider exists; **v0.6.4 hardened** — sealed `docs/w0-webhook-hardening.md`: per-append status refresh via the `on_append` hook so the tower stays live while the always-on path ingests, honest response semantics (derived-artifact failure → `status_refresh:"stale"`, never a fake ingestion failure), honest 500 surface (class travels, traceback doesn't, nothing journaled)), `synthetic.py` (TEST ONLY, `source="synthetic"` hardwired), `base.py` declarative `FieldMap` normalization (ISO→epoch, bps→pct, side/status synonyms) |
-| `scripts/rfq_ingest.py` · `rfq_replay.py` · `rfq_webhook_recv.py` · `rfq_coverage.py` | W0/W1-INFRA CLIs — ingest (`--dry-run` first-contact validation writes NOTHING) / verify+replay (descriptive accounting only) / webhook receiver (refreshes `rfq-status.json` per accepted record — `--no-status-refresh` escape for bursts; `--status` mirrors `--journal`) / coverage census (`--json`, `--family`; the one-command research-readiness answer before any W1 record is sealed) |
+| `scripts/rfq_ingest.py` · `rfq_replay.py` · `rfq_webhook_recv.py` · `rfq_coverage.py` · `rehearse_first_feed.py` | W0/W1-INFRA CLIs — ingest (`--dry-run` first-contact validation writes NOTHING) / verify+replay (descriptive accounting only) / webhook receiver (refreshes `rfq-status.json` per accepted record — `--no-status-refresh` escape for bursts; `--status` mirrors `--journal`) / coverage census (`--json`, `--family`; the one-command research-readiness answer before any W1 record is sealed) / **the first-feed rehearsal** — the full runbook as one executable dress rehearsal on stand-in data, zero repo writes (run it today) |
 
 ## Run the research demo (zero network, zero capital)
 
@@ -130,6 +130,11 @@ builds the **real-world data layer** — not a new estimator, not a research rou
   writing it without credentials would be untestable theater.
 
 ```bash
+# THE FIRST-FEED DAY, rehearsed today on stand-in data (zero repo writes):
+# the full sequence — dry-run → ingest → webhook → verify → census → replay
+# — as one executable dress rehearsal (runbook: docs/runbook-first-feed.md)
+python3 scripts/rehearse_first_feed.py
+
 # FIRST CONTACT with an unknown export format: validate + preview, write NOTHING
 # (per-row schema + field-map validation, duplicate detection, would-be census;
 #  exit 1 if any row would be skipped — fix the map/export before real ingest)
@@ -155,12 +160,12 @@ python3 scripts/rfq_webhook_recv.py --port 3901 --token SHARED_SECRET
 python3 scripts/rfq_coverage.py            # human report
 python3 scripts/rfq_coverage.py --json     # machine-readable, for the W1 record
 
-# reproduce every W0 invariant check from the repo alone (100 checks, exit = failures)
+# reproduce every W0 invariant check from the repo alone (103 checks, exit = failures)
 python3 research/exploration/verify_w0_invariants.py
 ```
 
 Honest status as shipped: **0 real records** — no RFQ desk API credentials exist
-in this environment. The machinery is complete, invariant-checked (100 checks:
+in this environment. The machinery is complete, invariant-checked (103 checks:
 fully reproducible from the repo via
 `research/exploration/verify_w0_invariants.py`: chain tamper/reorder/insert/
 truncate detection, duplicate-id rejection (journal + within-batch), future
@@ -170,11 +175,13 @@ token gate, duplicate/future-ts rejection, malformed JSON, only-valid-journaled,
 the v0.6.4 webhook hardening — per-append status refresh, stale-marker
 honesty, 500 surface, zero pollution of the real artifact,
 the W1-INFRA replay adapter — source wall, provenance mapping, tenor
-convention, refused funding/settlement surfaces, read-only replay — and the
+convention, refused funding/settlement surfaces, read-only replay — the
 W1-INFRA coverage census — eligibility breakdown, day/tenor coverage,
-unclassified buckets, CLI e2e) and
+unclassified buckets, CLI e2e — and the first-feed rehearsal: the full
+runbook executed end-to-end on stand-in data, zero repo writes) and
 exercised end-to-end on all three adapters; real data starts flowing the
-moment a feed is connected (W0→W1).
+moment a feed is connected (W0→W1). The operational sequence for that day is
+[`docs/runbook-first-feed.md`](docs/runbook-first-feed.md).
 
 ## W1-INFRA (v0.6.2) — the RFQ journal replay adapter
 

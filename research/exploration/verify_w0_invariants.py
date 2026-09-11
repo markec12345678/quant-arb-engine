@@ -753,6 +753,30 @@ try:
           "CLI tests (zero pollution)",
           (open(_real_status, "rb").read() if os.path.exists(_real_status)
            else b"") == _rs_before)
+
+    # --- 13. W0 first-feed rehearsal (v0.6.5, docs/runbook-first-feed.md) ---
+    # The dress rehearsal executes the ENTIRE runbook as real subprocesses on
+    # stand-in data in a scratch workspace — the harness verifies it can't rot.
+    _real_journal13 = os.path.abspath(os.path.join(
+        os.path.dirname(__file__), "..", "artifacts", "rfq", "journal.jsonl"))
+    rehearsal = os.path.join(os.path.dirname(__file__), "..", "..", "scripts",
+                             "rehearse_first_feed.py")
+    _rs_before13 = (open(_real_status, "rb").read()
+                    if os.path.exists(_real_status) else b"")
+    _rj_before13 = os.path.exists(_real_journal13)
+    r13 = _sp.run([sys.executable, rehearsal], capture_output=True, text=True)
+    check("rehearsal: every runbook step PASSes end-to-end (exit 0)",
+          r13.returncode == 0 and "REHEARSAL COMPLETE" in r13.stdout
+          and r13.stdout.count("PASS") >= 7 and "FAIL" not in r13.stdout,
+          r13.stdout[-300:] + r13.stderr[-300:])
+    check("rehearsal: stand-in data honestly labeled",
+          "stand-in desk data" in r13.stdout and "nothing written to the repo"
+          in r13.stdout)
+    check("rehearsal: zero pollution — real status byte-identical, real "
+          "journal existence unchanged",
+          (open(_real_status, "rb").read() if os.path.exists(_real_status)
+           else b"") == _rs_before13
+          and os.path.exists(_real_journal13) == _rj_before13)
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 

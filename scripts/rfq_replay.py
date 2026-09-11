@@ -31,6 +31,9 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--journal", default=None,
                     help="default: the smoke journal if the real one is absent")
+    ap.add_argument("--status", default=DEFAULT_STATUS,
+                    help="derived status artifact path (the truncation bound is "
+                         "read from it; pass the SAME --status you ingest to)")
     ap.add_argument("--smoke-journal", action="store_true")
     ap.add_argument("--verify-only", action="store_true")
     ap.add_argument("--markdown", action="store_true")
@@ -52,14 +55,14 @@ def main() -> int:
     try:
         if args.verify_only:
             from quant_arb.rfq.replay import load_status
-            st = load_status(DEFAULT_STATUS)
+            st = load_status(args.status)
             expect = (st or {}).get("integrity", {}).get("head_hash")
             summary = journal.verify(expect_head=expect)
             print(f"[rfq-replay] OK lines={summary['lines']} "
                   f"head={summary['head_hash'][:16]}… sources={summary['sources']} "
                   f"truncation={'checked' if expect else 'no-prior-status'}")
             return 0
-        report = replay(journal, DEFAULT_STATUS, refresh_status=args.refresh_status)
+        report = replay(journal, args.status, refresh_status=args.refresh_status)
     except RFQJournalError as e:
         print(f"[rfq-replay] INTEGRITY FAILURE: {e}", file=sys.stderr)
         return 1
