@@ -13,7 +13,7 @@ from __future__ import annotations
 import random
 from typing import Any, Dict, Iterator
 
-from .base import FieldMap, RFQProvider, normalize
+from .base import FieldMap, RFQProvider
 
 _DAY_MS = 86_400_000
 
@@ -85,11 +85,12 @@ class SyntheticRFQProvider(RFQProvider):
                 payload.update({"status": "timeout"})
             yield payload
 
-    def records(self, field_map: FieldMap) -> Iterator[Any]:
+    def effective_map(self, field_map: FieldMap) -> FieldMap:
         # The synthetic provider speaks its own canonical dialect, so it ships
         # its own map; the CLI-supplied one is accepted and ignored (documented
-        # behaviour, not silent surprise).
-        syn_map = FieldMap(
+        # behaviour, not silent surprise). Overriding the dialect hook (not
+        # records) keeps the strict and safe walk paths identical.
+        return FieldMap(
             rfq_id="id", instrument="instrument", venue="venue", ts="ts",
             side="side", requested_notional="notional", quoted_price="price",
             quote_type="quote_type", quote_expiry_ts="expiry",
@@ -102,5 +103,3 @@ class SyntheticRFQProvider(RFQProvider):
             price_ccy="price_ccy", reference_source="reference_source",
             ts_is_epoch=True, expiry_is_epoch=True, reference_ts_is_epoch=True,
         )
-        for raw in self.iter_raw():
-            yield normalize(raw, syn_map, provider_source=self.source)

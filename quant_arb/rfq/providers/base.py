@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import datetime as _dt
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, Iterator, List, Optional
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple
 
 from ..schema import ExternalRFQ, RFQSchemaError
 
@@ -112,12 +112,41 @@ class RFQProvider:
     name: str = "base"
     source: str = "real"
 
+    def effective_map(self, field_map: FieldMap) -> FieldMap:
+        """The map this provider actually speaks (dialect hook).
+
+        Default: the caller-supplied map. Dialect providers that ship their
+        own canonical key names (the synthetic test generator) override this
+        so ``records``/``safe_records`` both speak the dialect consistently.
+        """
+        return field_map
+
     def iter_raw(self) -> Iterator[Dict[str, Any]]:
         raise NotImplementedError
 
     def records(self, field_map: FieldMap) -> Iterator[ExternalRFQ]:
+        fm = self.effective_map(field_map)
         for raw in self.iter_raw():
-            yield normalize(raw, field_map, provider_source=self.source)
+            yield normalize(raw, fm, provider_source=self.source)
+
+    def safe_records(self, field_map: FieldMap
+                     ) -> Iterator[Tuple[int, Optional[ExternalRFQ],
+                                         Optional[RFQSchemaError]]]:
+        """Yield ``(index, record, error)`` — exactly one of record/error set.
+
+        Per-record isolation: a payload that fails normalization (missing
+        mapped field, unparseable timestamp, unknown status/side) is reported
+        at its index and the walk CONTINUES — this is the ``--keep-going`` /
+        ``--dry-run`` contract (one malformed row never aborts the report).
+        The strict ``records()`` generator above still dies at the first bad
+        payload (fail-closed single-shot flows).
+        """
+        fm = self.effective_map(field_map)
+        for i, raw in enumerate(self.iter_raw()):
+            try:
+                yield i, normalize(raw, fm, provider_source=self.source), None
+            except RFQSchemaError as e:
+                yield i, None, e
 
     def describe(self) -> Dict[str, Any]:
         return {"name": self.name, "source": self.source}

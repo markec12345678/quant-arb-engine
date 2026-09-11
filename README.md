@@ -80,7 +80,7 @@ Module map:
 | `scripts/research_sweep.py` | Multi-seed sweep CLI (v0.5: 80 seeds = screening 1..60 + holdout 61..80 + like-for-like 1..40); overwrites the stable `run-latest.json` / `sweep-latest.json` derived summaries for the tower |
 | `quant_arb/rfq/` | **W0 (v0.6): the real-world data layer** — `schema.py` `ExternalRFQ` (the 15 user-specified fields + the `source` epistemic wall + verbatim `raw`, write-time invariants R-1…R-13), `journal.py` immutable hash-chained raw journal (tamper/reorder/insertion detection; head-vs-status truncation bound), `edge.py` deterministic ALL-IN EDGE accounting (I-4 descendant: fees charged exactly once), `replay.py` descriptive reporting |
 | `quant_arb/rfq/providers/` | Pluggable adapters — `file_ingest.py` (REAL: desk exports JSONL/JSON/CSV), `webhook.py` (REAL: push receiver, one command when a provider exists), `synthetic.py` (TEST ONLY, `source="synthetic"` hardwired), `base.py` declarative `FieldMap` normalization (ISO→epoch, bps→pct, side/status synonyms) |
-| `scripts/rfq_ingest.py` · `rfq_replay.py` · `rfq_webhook_recv.py` | W0 CLIs — ingest / verify+replay (descriptive accounting only) / webhook receiver |
+| `scripts/rfq_ingest.py` · `rfq_replay.py` · `rfq_webhook_recv.py` | W0 CLIs — ingest (`--dry-run` first-contact validation writes NOTHING) / verify+replay (descriptive accounting only) / webhook receiver |
 
 ## Run the research demo (zero network, zero capital)
 
@@ -128,6 +128,12 @@ builds the **real-world data layer** — not a new estimator, not a research rou
   writing it without credentials would be untestable theater.
 
 ```bash
+# FIRST CONTACT with an unknown export format: validate + preview, write NOTHING
+# (per-row schema + field-map validation, duplicate detection, would-be census;
+#  exit 1 if any row would be skipped — fix the map/export before real ingest)
+python3 scripts/rfq_ingest.py --provider file --path export.jsonl \
+    --field-map quant_arb/rfq/providers/example_field_map.json --dry-run
+
 # ingest a real desk export (first real-data path, usable today)
 python3 scripts/rfq_ingest.py --provider file --path export.jsonl \
     --field-map quant_arb/rfq/providers/example_field_map.json
@@ -141,14 +147,20 @@ python3 scripts/rfq_replay.py --markdown
 
 # push-provider receiver (run when a feed exists; binds 127.0.0.1)
 python3 scripts/rfq_webhook_recv.py --port 3901 --token SHARED_SECRET
+
+# reproduce every W0 invariant check from the repo alone (46 checks, exit = failures)
+python3 research/exploration/verify_w0_invariants.py
 ```
 
 Honest status as shipped: **0 real records** — no RFQ desk API credentials exist
-in this environment. The machinery is complete, invariant-checked (37 checks:
-chain tamper/reorder/insert/truncate detection, duplicate-id rejection, future
+in this environment. The machinery is complete, invariant-checked (46 checks,
+fully reproducible from the repo via
+`research/exploration/verify_w0_invariants.py`: chain tamper/reorder/insert/
+truncate detection, duplicate-id rejection (journal + within-batch), future
 reference rejection, determinism, source wall, edge accounting, field-map
-synonyms) and exercised end-to-end on all three adapters; real data starts
-flowing the moment a feed is connected (W0→W1).
+synonyms, dry-run writes-nothing, malformed-row isolation) and exercised
+end-to-end on all three adapters; real data starts flowing the moment a feed
+is connected (W0→W1).
 
 ## v0.3 — Instrument choice, honest horizon σ, ranking (decision record)
 

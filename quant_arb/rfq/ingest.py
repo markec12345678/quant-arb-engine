@@ -32,17 +32,29 @@ def ingest(provider, journal: RawRFQJournal, field_map: FieldMap,
            stop_on_error: bool = True) -> Dict[str, Any]:
     """Ingest every provider record into the journal; return a run summary.
 
-    Fail-closed by default: the first schema violation aborts the run with
-    nothing further written (records before it stay journaled — the journal
-    is append-only; the error names the offending record). With
+    Fail-closed by default: the first invalid payload — a normalization
+    error (missing mapped field, unparseable value) OR a journal-append
+    violation (schema, duplicate rfq_id) — aborts the run with nothing
+    further written (records before it stay journaled — the journal is
+    append-only; the error names the offending record and its index). With
     ``stop_on_error=False`` (explicit opt-in) invalid payloads are counted
-    and skipped — useful for messy first-contact desk exports; every skip is
-    reported, never silent.
+    and skipped — useful for messy first-contact desk exports; every skip
+    is reported, never silent. Per-record isolation is provided by the
+    provider's ``safe_records`` walk: one malformed row never aborts the
+    report (v0.6.1 fix — previously a normalization error escaped the
+    generator and crashed even keep-going runs).
     """
     n_ok = 0
     n_skip = 0
     errors: list = []
-    for i, rec in enumerate(provider.records(field_map)):
+    for i, rec, err in provider.safe_records(field_map):
+        if err is not None:
+            if stop_on_error:
+                raise err
+            n_skip += 1
+            errors.append({"index": i, "error": str(err)})
+            continue
+        assert rec is not None
         try:
             journal.append(rec)
             n_ok += 1
@@ -53,6 +65,79 @@ def ingest(provider, journal: RawRFQJournal, field_map: FieldMap,
             errors.append({"index": i, "error": str(e)})
     return {"provider": provider.describe(), "appended": n_ok, "skipped": n_skip,
             "skip_errors": errors}
+
+
+def dry_run(provider, journal: RawRFQJournal, field_map: FieldMap,
+            preview: int = 5) -> Dict[str, Any]:
+    """Validate a provider's records WITHOUT writing anything.
+
+    First-contact tool: reports exactly what ``ingest`` WOULD do — per-record
+    schema validation (every violation reported, none silent), duplicate
+    rfq_id detection against the journal's existing ids (read-only scan) AND
+    within the batch, a would-be sources census, and a preview of the first
+    valid records. Disk state is untouched: no journal line, no lock file,
+    no status refresh (it is a preview, not an operation).
+    """
+    existing_ids: set = set()
+    unparseable = 0
+    if os.path.exists(journal.path):
+        with open(journal.path, "r", encoding="utf-8") as f:
+            for line in f:
+                s = line.strip()
+                if not s:
+                    continue
+                try:
+                    rec = json.loads(s)
+                except json.JSONDecodeError:
+                    unparseable += 1
+                    continue
+                rid = (rec.get("rfq") or {}).get("rfq_id")
+                if rid is not None:
+                    existing_ids.add(rid)
+    seen = set(existing_ids)
+    n_ok = n_skip = 0
+    sources: Dict[str, int] = {}
+    errors: list = []
+    preview_rows: list = []
+    for i, rec, err in provider.safe_records(field_map):
+        if err is not None:
+            n_skip += 1
+            errors.append({"index": i, "error": str(err)})
+            continue
+        assert rec is not None
+        try:
+            # defence in depth: re-validate on the read path, same as verify()
+            ExternalRFQ.from_payload(rec.to_payload())
+            if rec.rfq_id in seen:
+                origin = ("already journaled" if rec.rfq_id in existing_ids
+                          else "within this batch")
+                raise RFQSchemaError(
+                    f"[R-1] duplicate rfq_id {rec.rfq_id!r} — {origin}")
+            seen.add(rec.rfq_id)
+        except RFQSchemaError as e:
+            n_skip += 1
+            errors.append({"index": i, "error": str(e)})
+            continue
+        n_ok += 1
+        sources[rec.source] = sources.get(rec.source, 0) + 1
+        if len(preview_rows) < preview:
+            preview_rows.append({
+                "rfq_id": rec.rfq_id, "instrument": rec.instrument,
+                "venue": rec.venue, "side": rec.side, "status": rec.status,
+                "source": rec.source, "ts": rec.ts})
+    return {
+        "provider": provider.describe(),
+        "journal_path": journal.path,
+        "journal_exists": os.path.exists(journal.path),
+        "journal_records": len(existing_ids),
+        "journal_unparseable_lines": unparseable,
+        "would_append": n_ok,
+        "would_skip": n_skip,
+        "would_be_sources": sources,
+        "skip_errors": errors,
+        "preview": preview_rows,
+        "wrote_nothing": True,
+    }
 
 
 def write_status(journal: RawRFQJournal, status_path: str = DEFAULT_STATUS,
