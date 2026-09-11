@@ -1,5 +1,4 @@
 __pycache__/
 *.py[cod]
 .venv/
-research/artifacts/
 .DS_Store

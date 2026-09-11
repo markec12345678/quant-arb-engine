@@ -75,6 +75,11 @@ def run(cfg: RunConfig, out_path: str) -> Dict:
                     "perp_alternative_apr": None if alt_apr != alt_apr else round(alt_apr, 6),
                     "locked_premium_usd": round(pos.opportunity.carry.expected_usd, 6),
                     "note": "locked forward premium vs realized funding path over the same window",
+                    # v0.2.0 research layer: ex-ante estimator state at entry (added keys
+                    # only — backwards-compatible), consumed by the z-gate calibration
+                    # diagnostic in scripts/research_sweep.py.
+                    "ex_ante_apr": pos.opportunity.metadata.get("realized_apr"),
+                    "ex_ante_sigma_apr": pos.opportunity.metadata.get("realized_sigma_apr"),
                 }
                 journal.append("position_settled", payload)
                 settled_payloads.append(payload)

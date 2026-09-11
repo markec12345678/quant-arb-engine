@@ -64,7 +64,9 @@ Module map:
 | `quant_arb/risk/caps.py` | Research caps — per-position notional, tenor, open-position count; enumerated reject reasons |
 | `quant_arb/positions.py` | Paper position state machine: `OPEN → SETTLED`, **signed PnL only** (I-3) |
 | `quant_arb/pipeline.py` | Research run loop: feed → strategy → edge → risk → journal; summary with unit discipline |
-| `scripts/research_run.py` | CLI entry point |
+| `quant_arb/research/stats.py` | Pure-stdlib distribution helpers (mean, sample std, numpy-style linear percentiles) for sweep summaries — machinery diagnostics, never market evidence |
+| `scripts/research_run.py` | CLI entry point (single run) |
+| `scripts/research_sweep.py` | Multi-seed sweep CLI (v0.2); overwrites the stable `run-latest.json` / `sweep-latest.json` derived summaries for the tower |
 
 ## Run the research demo (zero network, zero capital)
 
@@ -75,6 +77,63 @@ python3 scripts/research_run.py --days 120 --seed 3 --tenor 60
 
 Writes an append-only journal to `research/artifacts/run_<ts>.jsonl` and prints a
 summary. Requires Python ≥ 3.10, **stdlib only — no dependencies.**
+
+## Research layer (v0.2)
+
+Multi-seed sweep on top of the single-run pipeline — the machinery-validation
+layer:
+
+```bash
+python3 scripts/research_sweep.py                     # 40 seeds (1..40), 200 days each
+python3 scripts/research_sweep.py --seeds 10 --days 120 --tenor 60
+```
+
+Runs the full pipeline per seed (one invariant-enforced journal per seed under
+`research/artifacts/sweep_runs/`), pools the statistics and overwrites two
+**stable artifact files**, consumed read-only by the tower dashboard:
+
+- `research/artifacts/run-latest.json` — the representative seed (default 7):
+  the exact pipeline summary, every settled position with lock diagnostics, and
+  the last journaled opportunity payload.
+- `research/artifacts/sweep-latest.json` — cross-seed aggregates: totals, gate
+  fire rate, reject-reason census, pooled settled stats, z-gate calibration,
+  per-seed rows.
+
+The two `-latest.json` files are **derived summaries** (plain JSON, not
+journal-managed); the append-only invariant-enforced journals remain the source
+of truth. Runs are deterministic — seeds are explicit, never time-based.
+
+What the stats MEAN:
+
+- **gate_fire_rate_pct** — share of quoting days on which the pre-registered
+  gates fired (z ≥ 2 AND net edge ≥ 10 bps). On the synthetic ramp the desk
+  lags the funding regime *by construction*, so this is high by design of the
+  mock world — it measures world construction, not strategy selectivity.
+- **reject_reasons** — census of risk-cap rejects across all journals; the
+  open-position concentration cap dominates, as the single-run demo predicts.
+- **settled_stats.pnl_pct_of_notional** — distribution of realized signed PnL
+  per settled position, as % of requested notional, pooled across seeds.
+- **realized_minus_locked_bps** — `(realized settlement PnL − premium locked at
+  inception)` in bps of notional: **how well the dated-forward lock holds
+  through settlement**. Expected ≈ −(exit cost): everything but the exit
+  crossing is contractually fixed, so the number should be small and negative —
+  in this world the realized exit crossing is the desk spot half-spread at
+  unwind (3 bps on exit notional), while the waterfall books the conservative
+  pre-registered `exit_cost_bps = 8` buffer ex ante. A tight, small-negative
+  distribution means the lock machinery works.
+- **locked_minus_perp_alt_apr_bps** — locked premium APR vs the perp funding
+  alternative over the same window (opportunity cost, synthetic).
+- **z_gate_calibration** — honesty check of the estimator σ: if the EWMA
+  estimator σ were an honest uncertainty for the held window, ≈ 4.55%
+  (2σ two-sided) of settled entries would breach
+  `|realized window APR − ex-ante EWMA APR| > 2σ`. The empirical rate is
+  reported AS COMPUTED and never tuned. (On the synthetic ramp it is very
+  high: the estimator σ measures *instantaneous* estimation error, not
+  horizon uncertainty — regime drift over the 90-day window dominates. That is
+  a property of the σ's meaning, and knowing it is the point of the check.)
+
+Interpretation RULE: these are machinery diagnostics on a synthetic world.
+They validate code paths, never market edges.
 
 ## Invariants (audit lessons → enforced code)
 

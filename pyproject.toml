@@ -1,6 +1,6 @@
 [project]
 name = "quant-arb-engine"
-version = "0.1.0"
+version = "0.2.0"
 description = "Multi-strategy arbitrage research engine (paper/research only) — sibling of funding-arb (locked measurement baseline)."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -11,4 +11,4 @@ dev = []
 
 [tool.setuptools]
 packages = ["quant_arb", "quant_arb.models", "quant_arb.edge", "quant_arb.feeds",
-            "quant_arb.strategies", "quant_arb.risk"]
+            "quant_arb.strategies", "quant_arb.risk", "quant_arb.research"]

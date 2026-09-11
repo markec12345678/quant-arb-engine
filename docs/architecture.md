@@ -28,7 +28,8 @@ transfer is **conceptual knowledge** (schemas, invariants, lessons).
 | `strategies/*` | `Strategy.scan(ctx, size, tenor) → [Opportunity]`. Implemented: `ForwardBasisStrategy` (Route B). Planned: funding-arb port, spot/perp basis — same interface. |
 | `risk/caps.py` | `check(opp, open_count, caps) → (ok, reasons[])` — every reject is enumerated and journaled. Research placeholders until W0 returns real desk terms. |
 | `positions.py` | `PaperPosition`: OPEN → SETTLED. Settle computes per-leg **signed** PnL `(exit − entry) × qty × direction` (I-3), verifies exit ts > entry ts (I-5), and returns the ex-ante vs realized comparison payload. |
-| `pipeline.py` | The run loop: advance day → settle matured → (every N days) journal quotes → scan → risk-gate → open. Summary enforces the unit rule (aggregate Σ% vs mean per position) and the epistemic note. |
+| `pipeline.py` | The run loop: advance day → settle matured → (every N days) journal quotes → scan → risk-gate → open. Summary enforces the unit rule (aggregate Σ% vs mean per position) and the epistemic note. The settle payload's `research_compare` carries, since v0.2.0, the ex-ante estimator state (`ex_ante_apr`, `ex_ante_sigma_apr`) next to the realized comparison — added keys only, backwards-compatible. |
+| `research/stats.py` | Pure-stdlib distribution helpers (`mean`, sample std, numpy-style linear percentiles, `dist_obj`). Machinery diagnostics on a synthetic world — never market evidence. |
 
 ## Data flow (forward basis, current)
 
@@ -62,11 +63,23 @@ seed changes the numbers; the invariants do not change.
 
 1. **W1 real feed** — `WintermuteFeed` (or a journal-replayer of W1 RFQ quotes)
    implementing `funding_obs / spot_quotes / forward_quote` with
-   `PriceSource.DESK_RFQ_QUOTE`. Strategy code unchanged.
+   `PriceSource.DESK_RFQ_QUOTE`. Strategy code unchanged. **Unchanged by
+   v0.2.0** — the research layer reads journals only; a real feed still
+   implements the same feed surface and swaps in behind the existing
+   interface.
 2. **Funding-arb port** — the locked system's scanner semantics become a
    second `Strategy` emitting the same `Opportunity` shape; its venue
    tickers/funding map onto `Price`/`FundingObservation` with honest sources.
-3. **Research layer** — feature extraction over journals: carry curves, gap
+3. **Research layer** — **EXISTS (v0.2.0)**: `scripts/research_sweep.py`
+   runs the deterministic pipeline across seeds 1..40 (one invariant-enforced
+   journal per seed under `research/artifacts/sweep_runs/`) and overwrites
+   two stable artifacts — `research/artifacts/run-latest.json`
+   (representative seed, full detail) and
+   `research/artifacts/sweep-latest.json` (pooled machinery-validation
+   stats: realized-vs-locked, z-gate calibration, gate fire rate, reject
+   census, per-seed rows). The tower dashboard consumes both **read-only**;
+   they are derived summaries, not journal-managed records — the journals
+   stay the source of truth. Next in this lane: carry curves, gap
    persistence, quote-cost distributions, opportunity ranking.
 4. **Execution abstraction** — RFQ lifecycle state machine (quote → accept →
    fill → settle) with fail-closed transitions, patterned on phase3-lab's

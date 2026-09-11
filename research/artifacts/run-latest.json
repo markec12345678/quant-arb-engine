@@ -1,0 +1,147 @@
+{
+  "generated_at": "2026-09-11T15:47:46Z",
+  "engine_version": "0.2.0",
+  "run_id": "09953ba16559",
+  "journal_path": "research/artifacts/sweep_runs/run_seed_0007.jsonl",
+  "summary": {
+    "synthetic": true,
+    "seed": 7,
+    "days": 200,
+    "tenor_days": 90,
+    "quotes": 152,
+    "opportunities_gated_in": 16,
+    "risk_rejects": 10,
+    "positions_opened": 6,
+    "positions_settled": 3,
+    "positions_still_open": 3,
+    "realized_signed_pnl_usd": 7878.41,
+    "aggregate_pct_of_notional": 7.8784,
+    "mean_per_position_pct": 2.6261,
+    "ex_ante_net_edge_mean_pct": 2.3097,
+    "unit_rule": "aggregate = \u03a3(per-position % of notional) over settled positions; mean = aggregate / N. Never read the aggregate as per-cycle.",
+    "epistemic_note": "SYNTHETIC/paper diagnostic only \u2014 on the current sample and reconstruction there is no proof of a positive edge. Never read as a real-trading forecast."
+  },
+  "settled": [
+    {
+      "position_id": "PP-0085-001",
+      "strategy_id": "forward_basis_v1",
+      "opened_day": 85,
+      "settle_day": 175,
+      "held_days": 90,
+      "signed_pnl_usd": 2262.641142,
+      "pnl_pct_of_notional": 2.262641,
+      "ex_ante_net_edge_bps": 195.5898,
+      "ex_ante_gross_edge_bps": 237.8961,
+      "locked_premium_usd": 2287.533892,
+      "locked_premium_bps": 228.7534,
+      "realized_minus_locked_bps": -2.4893,
+      "perp_alternative_apr": 0.166521,
+      "locked_premium_apr": 0.092772,
+      "quantity_chain_ok": true
+    },
+    {
+      "position_id": "PP-0105-002",
+      "strategy_id": "forward_basis_v1",
+      "opened_day": 105,
+      "settle_day": 195,
+      "held_days": 90,
+      "signed_pnl_usd": 2690.445716,
+      "pnl_pct_of_notional": 2.690446,
+      "ex_ante_net_edge_bps": 237.2404,
+      "ex_ante_gross_edge_bps": 281.219,
+      "locked_premium_usd": 2720.502677,
+      "locked_premium_bps": 272.0503,
+      "realized_minus_locked_bps": -3.0057,
+      "perp_alternative_apr": 0.175654,
+      "locked_premium_apr": 0.110331,
+      "quantity_chain_ok": true
+    },
+    {
+      "position_id": "PP-0110-003",
+      "strategy_id": "forward_basis_v1",
+      "opened_day": 110,
+      "settle_day": 200,
+      "held_days": 90,
+      "signed_pnl_usd": 2925.326719,
+      "pnl_pct_of_notional": 2.925327,
+      "ex_ante_net_edge_bps": 260.0705,
+      "ex_ante_gross_edge_bps": 304.4577,
+      "locked_premium_usd": 2952.750287,
+      "locked_premium_bps": 295.275,
+      "realized_minus_locked_bps": -2.7424,
+      "perp_alternative_apr": 0.177645,
+      "locked_premium_apr": 0.11975,
+      "quantity_chain_ok": true
+    }
+  ],
+  "opportunity_example": {
+    "carry": {
+      "description": "locked forward premium over tenor; \u03c3 = benchmark/early-exit mark risk",
+      "expected_usd": 4000.31906,
+      "locked": true,
+      "sigma_usd": 178.888395
+    },
+    "confidence": 0.6464,
+    "gross_edge_bps": 409.277489,
+    "horizon_days": 90,
+    "legs": [
+      {
+        "direction": 1,
+        "executed_size_usd": 100029.995743,
+        "instrument": "SYN",
+        "kind": "spot",
+        "px": {
+          "source": "synthetic_mock",
+          "ts": 1783209600000,
+          "value": 147.5744570089548
+        },
+        "qty": 677.8273,
+        "requested_size_usd": 100000.0,
+        "venue": "SYNTH_DESK"
+      },
+      {
+        "direction": -1,
+        "executed_size_usd": 104030.314803,
+        "instrument": "SYN-FWD-90D",
+        "kind": "forward",
+        "px": {
+          "source": "synthetic_mock",
+          "ts": 1783209600000,
+          "value": 153.47613588757835
+        },
+        "qty": 677.8273,
+        "requested_size_usd": 100000.0,
+        "venue": "SYNTH_DESK"
+      }
+    ],
+    "metadata": {
+      "forward_implied_apr": 0.165985,
+      "gap_apr": 0.020299,
+      "gates": {
+        "net_edge_gate": true,
+        "z_gate": true
+      },
+      "price_sources": {
+        "fwd_bid": "synthetic_mock",
+        "ref_mid": "synthetic_mock",
+        "spot_ask": "synthetic_mock"
+      },
+      "realized_apr": 0.186284,
+      "realized_sigma_apr": 0.007255,
+      "waterfall": {
+        "carry_uncertainty_buffer_bps": 17.8888,
+        "entry_cost_bps": 9.0,
+        "execution_risk_buffer_bps": 5.0,
+        "exit_cost_bps": 8.0,
+        "gross_edge_bps": 409.2775,
+        "net_executable_edge_bps": 366.3886,
+        "slippage_buffer_bps": 3.0
+      }
+    },
+    "net_executable_edge_bps": 366.38865,
+    "requested_notional_usd": 100000.0,
+    "signal_z": 2.5857,
+    "strategy_id": "forward_basis_v1",
+    "ts": 1783209600000
+  }
+}
