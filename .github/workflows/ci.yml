@@ -1,0 +1,37 @@
+# CI — the engine's own verification gate.
+#
+# The 103-check invariant harness (research/exploration/verify_w0_invariants.py)
+# was reproducible from the repo alone but ran only on the operator's machine.
+# Every sibling repo carries a remote gate — funding-arb its 539-test CI,
+# funding-arb-tower its typecheck+lint CI, phase3-lab its 106-test suite — so
+# a broken push here would have been caught only locally. This workflow gives
+# the engine the same discipline using the repo's OWN declared gate:
+#   whole-tree byte-compilation → the 103-check invariant harness.
+# Zero dependencies (stdlib only) → no install step. The harness is
+# self-contained (sys.path fixup, __file__-relative paths), read-only for the
+# repo's real artifacts (zero-pollution is itself among the checked
+# invariants, and a fresh checkout with no real journal is handled), ~4s warm
+# on a local machine.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Byte-compile gate (whole tree compiles)
+        run: python3 -m compileall -q quant_arb scripts research
+
+      - name: Invariant harness (103 tracked checks, exit = failures)
+        run: python3 research/exploration/verify_w0_invariants.py

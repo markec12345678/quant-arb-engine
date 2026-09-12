@@ -1,5 +1,7 @@
 # quant-arb-engine
 
+[![CI](https://github.com/markec12345678/quant-arb-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/markec12345678/quant-arb-engine/actions/workflows/ci.yml)
+
 Next-generation **multi-strategy arbitrage / quant research engine** — built in
 parallel to the locked funding-arb baseline. **Paper / research only: it never
 submits an order, never holds capital, never talks to a live venue.**
@@ -161,6 +163,7 @@ python3 scripts/rfq_coverage.py            # human report
 python3 scripts/rfq_coverage.py --json     # machine-readable, for the W1 record
 
 # reproduce every W0 invariant check from the repo alone (103 checks, exit = failures)
+# — this exact command is the CI gate that runs on GitHub on every push to main
 python3 research/exploration/verify_w0_invariants.py
 ```
 
@@ -178,7 +181,10 @@ the W1-INFRA replay adapter — source wall, provenance mapping, tenor
 convention, refused funding/settlement surfaces, read-only replay — the
 W1-INFRA coverage census — eligibility breakdown, day/tenor coverage,
 unclassified buckets, CLI e2e — and the first-feed rehearsal: the full
-runbook executed end-to-end on stand-in data, zero repo writes) and
+runbook executed end-to-end on stand-in data, zero repo writes) — and the same
+two steps now run as **CI on GitHub on every push/PR to main**
+(`.github/workflows/ci.yml`: whole-tree byte-compilation, then the 103-check
+harness — zero dependencies, no install step, fresh-checkout-safe) — and
 exercised end-to-end on all three adapters; real data starts flowing the
 moment a feed is connected (W0→W1). The operational sequence for that day is
 [`docs/runbook-first-feed.md`](docs/runbook-first-feed.md).
@@ -507,4 +513,4 @@ passes on ≥30 days of real journaled quotes.
 | [funding-arb](https://github.com/markec12345678/funding-arb) | the measured system — **locked** @ `0373f5d` (Phase-2 A/B/C paper validation) |
 | [phase3-lab](https://github.com/markec12345678/phase3-lab) | execution-safety laboratory (certified, port blocked by Phase-2 verdict) |
 | [funding-arb-tower](https://github.com/markec12345678/funding-arb-tower) | read-only command center + the research plan/decision records |
-| **quant-arb-engine** (this repo) | next-generation research engine — paper only |
+| **quant-arb-engine** (this repo) | next-generation research engine — paper only · CI on every push (whole-tree byte-compile + the 103-check invariant harness) |
