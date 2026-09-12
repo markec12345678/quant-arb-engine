@@ -10,7 +10,14 @@ submits an order, never holds capital, never talks to a live venue.**
 > [`docs/decision-record-2026-09-11.md`](docs/decision-record-2026-09-11.md);
 > v0.3.0 per [`docs/decision-record-v0.3.0.md`](docs/decision-record-v0.3.0.md);
 > v0.4.0 per [`docs/decision-record-v0.4.0.md`](docs/decision-record-v0.4.0.md);
-> v0.5.0 per [`docs/decision-record-v0.5.0.md`](docs/decision-record-v0.5.0.md).
+> v0.5.0 per [`docs/decision-record-v0.5.0.md`](docs/decision-record-v0.5.0.md);
+> v0.6.0–v0.6.5 (the W0 real-RFQ ingestion line and the W1-INFRA bridge —
+> infrastructure, no estimator work) per the sealed records
+> [`docs/w0-rfq-ingestion.md`](docs/w0-rfq-ingestion.md) ·
+> [`docs/w0-webhook-hardening.md`](docs/w0-webhook-hardening.md) ·
+> [`docs/w1-replay-adapter.md`](docs/w1-replay-adapter.md) ·
+> [`docs/w1-coverage-report.md`](docs/w1-coverage-report.md) ·
+> the first-feed runbook [`docs/runbook-first-feed.md`](docs/runbook-first-feed.md).
 > The measured system ([funding-arb](https://github.com/markec12345678/funding-arb)
 > @ `0373f5d`) stays untouched and keeps collecting Phase-2 A/B/C evidence:
 > **the old system measures reality; this engine explores the next generation.**
