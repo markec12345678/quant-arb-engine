@@ -91,15 +91,24 @@ jobs:
       - name: Descriptive report (ALL-IN EDGE accounting, never research)
         if: always() && steps.verify.outcome == 'success'
         run: |
+          set -eo pipefail
+          # The replay CLI prints an informational "[rfq-replay] …" line to
+          # stdout before the payload — filter it so the captured artifact is
+          # pure JSON/markdown (observed live: the first poll's report.json
+          # carried the stray line and failed JSON.parse downstream).
           python3 scripts/rfq_replay.py \
             --journal research/artifacts/rfq/journal-venue.jsonl \
             --status research/artifacts/rfq-status-venue.json \
-            > research/artifacts/rfq-venue-report.json
+            | grep -v '^\[rfq-replay\]' > research/artifacts/rfq-venue-report.json
+          head -c 1 research/artifacts/rfq-venue-report.json | grep -q '{' \
+            || { echo "report json malformed — refusing to push"; exit 1; }
           python3 scripts/rfq_replay.py --markdown \
             --journal research/artifacts/rfq/journal-venue.jsonl \
             --status research/artifacts/rfq-status-venue.json \
-            > research/artifacts/rfq-venue-report.md
-          echo "descriptive report regenerated"
+            | grep -v '^\[rfq-replay\]' > research/artifacts/rfq-venue-report.md
+          head -c 1 research/artifacts/rfq-venue-report.md | grep -q '#' \
+            || { echo "report markdown malformed — refusing to push"; exit 1; }
+          echo "descriptive report regenerated (info lines filtered)"
 
       - name: Push venue artifacts to the rfq-data branch
         if: always() && steps.verify.outcome == 'success'
