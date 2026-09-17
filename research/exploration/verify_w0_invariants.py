@@ -777,6 +777,164 @@ try:
           (open(_real_status, "rb").read() if os.path.exists(_real_status)
            else b"") == _rs_before13
           and os.path.exists(_real_journal13) == _rj_before13)
+
+    # --- 14. W0 venue source connection (v0.7.0, docs/w0-venue-source-connection.md) ---
+    # The connected real source (OKX public books) exercised on FIXTURE
+    # responses — zero network in CI, the same normalization path the live
+    # lane uses (the fetcher is the only injected seam). Every sealed rule
+    # V-1…V-9 gets a check.
+    from quant_arb.rfq.providers.venue_book import (FEE_PROVENANCE,
+                                                    OKXBookRFQProvider,
+                                                    venue_field_map)
+
+    class _FixFetch:
+        """Fixture venue: canned envelopes keyed by URL shape. fail_swap
+        simulates a venue outage for the perp book fetches."""
+        def __init__(self, spot_book, swap_book, fail_swap=False):
+            self.spot_book, self.swap_book = spot_book, swap_book
+            self.fail_swap = fail_swap
+        def __call__(self, url, timeout_s):
+            if self.fail_swap and "BTC-USDT-SWAP" in url and "market/books" in url:
+                raise OSError("fixture: simulated venue outage")
+            if "public/instruments" in url:
+                if "BTC-USDT-SWAP" in url:
+                    return {"code": "0", "data": [{"instId": "BTC-USDT-SWAP",
+                            "state": "live", "ctVal": "0.01", "ctType": "linear"}]}, 4.0
+                return {"code": "0", "data": [{"instId": "BTC-USDT", "state": "live",
+                        "baseCcy": "BTC", "quoteCcy": "USDT"}]}, 3.0
+            if "market/books" in url:
+                if "BTC-USDT-SWAP" in url:
+                    return dict(self.swap_book), 30.0
+                return dict(self.spot_book), 20.0
+            raise AssertionError(f"fixture: unexpected url {url}")
+
+    _V_TS_SPOT, _V_TS_SWAP = 1_700_000_000_000, 1_700_000_000_500
+    _deep_spot = {"code": "0", "data": [{"ts": str(_V_TS_SPOT),
+        "asks": [["100", "1"], ["101", "1"], ["102", "1"]],
+        "bids": [["99", "1"], ["98", "1"], ["97", "1"]]}]}
+    _deep_swap = {"code": "0", "data": [{"ts": str(_V_TS_SWAP),
+        "asks": [["200", "10000"], ["201", "10000"]],
+        "bids": [["199", "10000"], ["198", "10000"]]}]}
+    _vfm = venue_field_map()
+
+    # happy path: 4 quoted records, deterministic ids (V-9), source wall
+    _vp = OKXBookRFQProvider(notional=150.0, depth=5, timeout_s=2.0,
+                             fetcher=_FixFetch(_deep_spot, _deep_swap))
+    _vrecs = list(_vp.records(_vfm))
+    check("venue: 4 records per poll (2 instruments x both sides), all real, "
+          "deterministic ids, unique",
+          len(_vrecs) == 4 and all(r.source == "real" for r in _vrecs)
+          and [r.rfq_id for r in _vrecs] == [
+              f"okx:BTC-USDT:buy:{_V_TS_SPOT}", f"okx:BTC-USDT:sell:{_V_TS_SPOT}",
+              f"okx:BTC-USDT-PERP:buy:{_V_TS_SWAP}",
+              f"okx:BTC-USDT-PERP:sell:{_V_TS_SWAP}"],
+          str([r.rfq_id for r in _vrecs]))
+    _vb, _vs = _vrecs[0], _vrecs[1]
+    # spot VWAP, hand-computed: buy 150 = 100@100 + 50@101 → 150/(1+50/101);
+    # sell 150 = 99@99 + 51@98 → 150/(1+51/98)
+    check("venue: spot buy VWAP walks asks (V-1, hand-computed)",
+          _vb.status == "quoted" and _vb.side == "buy"
+          and abs(_vb.quoted_price - 150.0 / (1 + 50.0 / 101.0)) < 1e-9,
+          repr(_vb.quoted_price))
+    check("venue: spot sell VWAP walks bids (V-1, hand-computed)",
+          _vs.status == "quoted" and _vs.side == "sell"
+          and abs(_vs.quoted_price - 150.0 / (1 + 51.0 / 98.0)) < 1e-9,
+          repr(_vs.quoted_price))
+    # swap VWAP with the live ctVal multiplier (0.01 BTC/contract): 1 level
+    # fills 150 (200×10000×0.01 = 20000 quote available)
+    check("venue: swap VWAP applies ctVal contract multiplier (V-1)",
+          _vrecs[2].quoted_price == 200.0 and _vrecs[3].quoted_price == 199.0
+          and _vrecs[2].instrument_kind == "perp",
+          f"{_vrecs[2].quoted_price!r} {_vrecs[3].quoted_price!r}")
+    check("venue: instant validity + fresh reference + firm + fee provenance "
+          "(V-2/V-3/V-4/V-5/V-7)",
+          all(r.quote_type == "firm" and r.quote_expiry_ts == r.ts
+              and r.reference_ts == r.ts and r.reference_age_ms == 0
+              for r in _vrecs)
+          and _vb.fees_pct == 0.10 and _vrecs[2].fees_pct == 0.05
+          and _vb.fees_included_in_price is False
+          and _vb.raw["venue_raw"]["fee_schedule"] == FEE_PROVENANCE
+          and _vb.raw["venue_raw"]["okx_response"] is not None
+          and _vrecs[2].reference_source == "perp_book_mid")
+    check("venue: spread from the same book (V-6, hand-computed)",
+          abs(_vb.spread_bps - (100.0 - 99.0) / 99.5 * 1e4) < 1e-6,
+          repr(_vb.spread_bps))
+    # degenerate book: shallow spot (10 < 150) → rejected, quote-only nulls
+    _shallow = {"code": "0", "data": [{"ts": str(_V_TS_SPOT),
+        "asks": [["100", "0.1"]], "bids": [["99", "0.1"]]}]}
+    _vp2 = OKXBookRFQProvider(notional=150.0, depth=5, timeout_s=2.0,
+                              fetcher=_FixFetch(_shallow, _deep_swap, fail_swap=True),
+                              prior_references={"BTC-USDT-PERP": (199.5, _V_TS_SPOT - 900)})
+    _vrecs2 = list(_vp2.records(_vfm))
+    check("venue: insufficient depth → rejected with nulls (V-8, R-5/6/7/8/9)",
+          len(_vrecs2) == 3
+          and all(r.status == "rejected" and r.quoted_price is None
+                  and r.quote_type is None and r.quote_expiry_ts is None
+                  and r.fees_included_in_price is None and r.spread_bps is None
+                  and r.reject_reason == "insufficient_depth"
+                  for r in _vrecs2 if r.instrument == "BTC-USDT"),
+          str([(r.status, r.reject_reason) for r in _vrecs2]))
+    _vnr = [r for r in _vrecs2 if r.status == "no_response"]
+    check("venue: fetch failure → no_response with the honest prior "
+          "reference (V-8; R-11 holds by construction)",
+          len(_vnr) == 1 and _vnr[0].instrument == "BTC-USDT-PERP"
+          and _vnr[0].reference_price == 199.5
+          and _vnr[0].reference_ts == _V_TS_SPOT - 900
+          and _vnr[0].reference_ts <= _vnr[0].ts
+          and _vnr[0].raw["venue_raw"]["poll"]["sides_requested"] == ["buy", "sell"],
+          str(_vnr))
+    # cold failure: no prior reference → nothing yieldable, named loudly
+    _vp3 = OKXBookRFQProvider(notional=150.0, depth=5, timeout_s=2.0,
+                              fetcher=_FixFetch(_deep_spot, _deep_swap, fail_swap=True))
+    _vrecs3 = list(_vp3.records(_vfm))
+    check("venue: cold fetch failure yields no record and names the "
+          "instrument (V-8 — R-10 cannot be satisfied honestly)",
+          len(_vrecs3) == 2 and len(_vp3.cold_failures()) == 1
+          and "BTC-USDT-SWAP" in _vp3.cold_failures()[0],
+          str(_vp3.cold_failures()))
+    # journal round-trip: ingest the happy-path batch, verify chain, retry-safe
+    _j14 = os.path.join(tmp, "venue.jsonl")
+    _vj = RawRFQJournal(_j14)
+    from quant_arb.rfq.ingest import ingest as _ingest, dry_run as _dry_run
+    _run14 = _ingest(_vp, _vj, _vfm)
+    _sum14 = _vj.verify()
+    check("venue: fixture batch ingests into the hash chain (real x4, "
+          "R-1-enforced journal)",
+          _run14["appended"] == 4 and _run14["skipped"] == 0
+          and _sum14["lines"] == 4 and _sum14["sources"] == {"real": 4},
+          str(_sum14))
+    _vp_again = OKXBookRFQProvider(notional=150.0, depth=5, timeout_s=2.0,
+                                   fetcher=_FixFetch(_deep_spot, _deep_swap))
+    _dry14 = _dry_run(_vp_again, _vj, _vfm)
+    check("venue: retry of the same observation is refused by R-1 "
+          "(deterministic ids are retry-SAFE, never double-journaled)",
+          _dry14["would_append"] == 0 and _dry14["would_skip"] == 4
+          and all("[R-1]" in e["error"] for e in _dry14["skip_errors"]),
+          str(_dry14["skip_errors"][:1]))
+    # W1-INFRA compatibility: the census sees ONE family, complete pair day
+    from quant_arb.feeds.coverage import journal_coverage
+    _cov14 = journal_coverage(_vj)
+    _fams14 = _cov14.get("families", [])
+    check("venue: coverage census — one family BTC-USDT, full spot pair day, "
+          "perp day (C-1/C-5/C-6 — the W1 replay bridge accepts the records)",
+          [f["symbol"] for f in _fams14] == ["BTC-USDT"]
+          and _fams14[0]["spot_full_pair_days"] == 1
+          and _fams14[0]["perp_days"] == 1
+          and _fams14[0]["eligible"] == 4,
+          json.dumps(_fams14, default=str)[:300])
+    # zero pollution: the venue lane's repo paths live on the rfq-data branch
+    # only — the worktree never gains them from a harness run
+    _smoke14 = os.path.join(os.path.dirname(__file__), "..", "artifacts", "rfq",
+                            "journal-synthetic-smoke.jsonl")
+    check("venue: zero pollution — no venue journal/status in the repo "
+          "worktree, smoke journal + default journal untouched",
+          not os.path.exists(os.path.join(os.path.dirname(__file__), "..",
+                              "artifacts", "rfq", "journal-venue.jsonl"))
+          and not os.path.exists(os.path.join(os.path.dirname(__file__), "..",
+                              "artifacts", "rfq-status-venue.json"))
+          and os.path.exists(_smoke14)
+          and not os.path.exists(os.path.join(os.path.dirname(__file__), "..",
+                                 "artifacts", "rfq", "journal.jsonl")))
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 

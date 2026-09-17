@@ -94,10 +94,33 @@ exists**, and it must answer the funding-data question (the 15-field schema
 carries quote events only — adapter record §1). That is a separate day with
 its own discipline.
 
+## 7. The connected venue lane (v0.7.0) — the desk-independent real source
+
+A real feed that needs NO desk and NO credentials is connected since v0.7.0:
+the **OKX venue-book poller** (sealed separately in
+`docs/w0-venue-source-connection.md` — this section only points at it, the
+same way §1–§5 sequence sealed machinery):
+
+```bash
+python3 scripts/rfq_poll.py --dry-run     # first contact, writes NOTHING
+python3 scripts/rfq_poll.py               # one poll = up to 4 real records
+```
+
+The durable lane is the GitHub Actions workflow `rfq-venue-poll` (schedule +
+dispatch bridge): single writer, in-run chain verification, journal + status
++ census + descriptive report pushed to the `rfq-data` branch after every
+poll. The restore precheck inside the poll CLI is §3's truncation bound
+applied to the branch-restore path — a corrupted restore fails closed before
+anything is appended. The four §1–§5 commands above all work against the
+venue journal by passing `--journal research/artifacts/rfq/journal-venue.jsonl`
+(+ the matching `--status research/artifacts/rfq-status-venue.json`).
+
 ## Honest limits
 
-* **0 real records** exist as of this writing — every command above is
-  exercised on stand-in data by the rehearsal until a feed connects.
+* **Real records exist via the venue lane since v0.7.0** (count in
+  `research/artifacts/rfq-status-venue.json` on the `rfq-data` branch);
+  **0 desk-export records** exist — the §1–§5 desk-day sequence is still
+  exercised on stand-in data by the rehearsal until a desk feed connects.
 * The source wall: synthetic records are never research-eligible; the
   census and the replay adapter refuse synthetic journals by default.
 * Everything here is descriptive/collection only. No live trading anywhere,
@@ -111,4 +134,5 @@ its own discipline.
 | `docs/w1-replay-adapter.md` (v0.6.2) | replay mapping M-1…M-10, honest capability map | the adapter code |
 | `docs/w1-coverage-report.md` (v0.6.3) | census rules C-1…C-9 | the census code |
 | `docs/w0-webhook-hardening.md` (v0.6.4) | live-status + honest-error rules H-1…H-5 | the hardening code |
+| `docs/w0-venue-source-connection.md` (v0.7.0) | venue choice evidence, RFQ semantics V-1…V-9, journal-path governance amendment, the durable lane | the venue source code |
 | `docs/decision-record-v0.3.0/v0.4.0/v0.5.0.md` | the mock-world research rounds | their respective runs |

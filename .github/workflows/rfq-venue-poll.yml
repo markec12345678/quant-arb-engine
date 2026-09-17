@@ -1,0 +1,149 @@
+name: rfq-venue-poll
+
+# W0 REAL venue source collection lane (docs/w0-venue-source-connection.md,
+# sealed v0.7.0). One run = one poll of OKX's public order books (BTC-USDT
+# spot + BTC-USDT-PERP perp, buy + sell, 10k USDT notional) = up to 4 REAL
+# records appended to the hash-chained venue journal, verified in-run, then
+# pushed with its derived artifacts to the dedicated `rfq-data` branch.
+#
+# SINGLE WRITER: this workflow is the only writer of the venue journal. The
+# sandbox reads (git fetch + git show), never writes. R-1 duplicate refusal
+# plus the concurrency group make an accidental double-run safe.
+#
+# Durability rationale: the sandbox is reclaimed (proven twice); GitHub's
+# runners are the only plane that survives. Mirrors the proven funding-arb
+# paper-collector pattern (GITHUB_TOKEN push to a data branch, no secrets).
+#
+# Honest throttle note: scheduled workflows on quiet repos fire slower than
+# nominal (paper-data observed 25 cycles / ~4 days). The coverage census
+# records ACTUAL ts coverage — the cron is a ceiling, never a claim.
+
+on:
+  schedule:
+    # Every 30 minutes, offset by :07/:37 to avoid top-of-hour congestion.
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+  repository_dispatch:
+    # External/manual trigger bridge: POST /repos/{repo}/dispatches
+    # {"event_type":"rfq-venue-poll"} — same pattern as paper-cycle.
+    types: [rfq-venue-poll]
+
+concurrency:
+  group: rfq-venue-poll
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Restore accumulated venue journal + status from rfq-data
+        run: |
+          set -uo pipefail
+          mkdir -p research/artifacts/rfq
+          if git fetch --quiet origin rfq-data 2>/dev/null; then
+            for f in research/artifacts/rfq/journal-venue.jsonl \
+                     research/artifacts/rfq-status-venue.json; do
+              if git cat-file -e "origin/rfq-data:$f" 2>/dev/null; then
+                git show "origin/rfq-data:$f" > "$f"
+                echo "restored $f"
+              else
+                echo "$f absent on rfq-data — starting fresh"
+              fi
+            done
+          else
+            echo "rfq-data branch absent — first run"
+          fi
+
+      - name: Poll (append venue RFQ records; restore precheck inside)
+        id: poll
+        continue-on-error: true
+        run: |
+          python3 scripts/rfq_poll.py \
+            --journal research/artifacts/rfq/journal-venue.jsonl \
+            --status research/artifacts/rfq-status-venue.json
+
+      - name: Verify chain (in-run integrity gate)
+        id: verify
+        if: always()
+        run: |
+          python3 scripts/rfq_replay.py --verify-only \
+            --journal research/artifacts/rfq/journal-venue.jsonl \
+            --status research/artifacts/rfq-status-venue.json
+
+      - name: Coverage census (the W1 inclusion-criteria artifact)
+        if: always() && steps.verify.outcome == 'success'
+        run: |
+          python3 scripts/rfq_coverage.py --json \
+            --journal research/artifacts/rfq/journal-venue.jsonl \
+            > research/artifacts/coverage-venue-latest.json
+          echo "census regenerated"
+
+      - name: Descriptive report (ALL-IN EDGE accounting, never research)
+        if: always() && steps.verify.outcome == 'success'
+        run: |
+          python3 scripts/rfq_replay.py \
+            --journal research/artifacts/rfq/journal-venue.jsonl \
+            --status research/artifacts/rfq-status-venue.json \
+            > research/artifacts/rfq-venue-report.json
+          python3 scripts/rfq_replay.py --markdown \
+            --journal research/artifacts/rfq/journal-venue.jsonl \
+            --status research/artifacts/rfq-status-venue.json \
+            > research/artifacts/rfq-venue-report.md
+          echo "descriptive report regenerated"
+
+      - name: Push venue artifacts to the rfq-data branch
+        if: always() && steps.verify.outcome == 'success'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          REMOTE="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          rm -rf /tmp/rfqdata
+          if git clone --quiet --branch rfq-data --single-branch "$REMOTE" /tmp/rfqdata; then
+            echo "cloned rfq-data branch"
+          else
+            echo "rfq-data branch absent — creating it"
+            mkdir -p /tmp/rfqdata
+            git init --quiet /tmp/rfqdata
+            git -C /tmp/rfqdata checkout -q -b rfq-data
+            git -C /tmp/rfqdata remote add origin "$REMOTE"
+          fi
+          cd /tmp/rfqdata
+          mkdir -p research/artifacts/rfq
+          cp "$GITHUB_WORKSPACE/research/artifacts/rfq/journal-venue.jsonl" research/artifacts/rfq/
+          cp "$GITHUB_WORKSPACE/research/artifacts/rfq-status-venue.json" research/artifacts/
+          for f in rfq-venue-report.json rfq-venue-report.md coverage-venue-latest.json; do
+            if [ -f "$GITHUB_WORKSPACE/research/artifacts/$f" ]; then
+              cp "$GITHUB_WORKSPACE/research/artifacts/$f" research/artifacts/
+            fi
+          done
+          git config user.name "rfq-venue-poll-bot"
+          git config user.email "actions@github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes — nothing to push"
+            exit 0
+          fi
+          TS=$(date -u +"%Y-%m-%dT%H:%MZ")
+          git commit --quiet -m "okx venue poll ${TS} (W0 real RFQ ingestion, no trading)"
+          git push --quiet origin HEAD:rfq-data
+          echo "persisted okx venue poll ${TS}"
+
+      - name: Honesty gate (a failed poll must fail the run — AFTER the push)
+        if: always() && steps.poll.outcome == 'failure'
+        run: |
+          echo "POLL FAILED — a fetch failed cold (some instrument got no record)."
+          echo "Any partial real data above WAS pushed (durability), and this run"
+          echo "is red so the gap is visible. Check the poll step log and the"
+          echo "coverage census for the honest partial-day picture."
+          exit 1

@@ -121,9 +121,14 @@ seed changes the numbers; the invariants do not change.
    status artifact via the `on_append` hook so the tower stays live on the
    always-on path, honest response semantics (derived-artifact failure →
    `status_refresh:"stale"`, never a fake ingestion failure), honest 500
-   surface (class travels, traceback doesn't); authenticated-REST poller is a
-   documented slot). The invariant checks are tracked and reproducible from
-   the repo: `research/exploration/verify_w0_invariants.py` (103 checks).
+   surface (class travels, traceback doesn't); authenticated-desk-REST poller remains a
+   slot — **the credential-free real source CONNECTED in v0.7.0**: the OKX
+   venue-book poller, `quant_arb/rfq/providers/venue_book.py` +
+   `scripts/rfq_poll.py` + the GitHub Actions lane pushing the tracked venue
+   journal to the `rfq-data` branch, sealed in
+   `docs/w0-venue-source-connection.md`). The invariant checks are tracked
+   and reproducible from the repo:
+   `research/exploration/verify_w0_invariants.py` (116 checks).
    The operational sequence for the real-feed day — including a full
    executable dress rehearsal on stand-in data (`scripts/rehearse_first_feed.py`)
    — is the runbook: `docs/runbook-first-feed.md`.

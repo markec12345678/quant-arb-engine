@@ -17,10 +17,14 @@ submits an order, never holds capital, never talks to a live venue.**
 > [`docs/w0-webhook-hardening.md`](docs/w0-webhook-hardening.md) ·
 > [`docs/w1-replay-adapter.md`](docs/w1-replay-adapter.md) ·
 > [`docs/w1-coverage-report.md`](docs/w1-coverage-report.md) ·
-> the first-feed runbook [`docs/runbook-first-feed.md`](docs/runbook-first-feed.md).
+> the first-feed runbook [`docs/runbook-first-feed.md`](docs/runbook-first-feed.md);
+> v0.7.0 — **the real venue-book source connection (OKX public books, the
+> poller slot lands)** — per
+> [`docs/w0-venue-source-connection.md`](docs/w0-venue-source-connection.md).
 > The measured system ([funding-arb](https://github.com/markec12345678/funding-arb)
-> @ `0373f5d`) stays untouched and keeps collecting Phase-2 A/B/C evidence:
-> **the old system measures reality; this engine explores the next generation.**
+> @ `0373f5d`) stays untouched — Phase-2 concluded with verdict C (results
+> locked, root-caused, archived):
+> **the old system measured reality; this engine now ingests it.**
 
 ---
 
@@ -134,9 +138,10 @@ builds the **real-world data layer** — not a new estimator, not a research rou
 * **Provider adapters** — `file` (REAL: desk exports / user-held RFQ history in
   JSONL/JSON/CSV via a declarative `--field-map`), `webhook` (REAL: one-command
   push receiver for Paradigm-style providers, shared-secret token supported),
-  `synthetic` (TEST ONLY, the pipeline exerciser). An authenticated-REST poller
-  is a documented **slot** that lands with W1 when a source is connected —
-  writing it without credentials would be untestable theater.
+  `venue_book` (REAL since v0.7.0: the connected **OKX public-book poller** —
+  see below), `synthetic` (TEST ONLY, the pipeline exerciser). The
+  authenticated-desk-REST poller remains a slot for the day desk credentials
+  exist — writing it without credentials would be untestable theater.
 
 ```bash
 # THE FIRST-FEED DAY, rehearsed today on stand-in data (zero repo writes):
@@ -169,14 +174,39 @@ python3 scripts/rfq_webhook_recv.py --port 3901 --token SHARED_SECRET
 python3 scripts/rfq_coverage.py            # human report
 python3 scripts/rfq_coverage.py --json     # machine-readable, for the W1 record
 
-# reproduce every W0 invariant check from the repo alone (103 checks, exit = failures)
+# THE CONNECTED REAL VENUE SOURCE (v0.7.0): poll OKX public books —
+# BTC-USDT spot + BTC-USDT-PERP perp, buy + sell, 10k USDT notional per record.
+# The durable lane runs this on GitHub Actions (single writer, pushes to the
+# rfq-data branch); --dry-run is the safe first contact, writes NOTHING
+python3 scripts/rfq_poll.py --dry-run
+python3 scripts/rfq_poll.py --journal research/artifacts/rfq/journal-venue.jsonl \
+    --status research/artifacts/rfq-status-venue.json
+
+# reproduce every W0 invariant check from the repo alone (116 checks, exit = failures)
 # — this exact command is the CI gate that runs on GitHub on every push to main
 python3 research/exploration/verify_w0_invariants.py
 ```
 
-Honest status as shipped: **0 real records** — no RFQ desk API credentials exist
-in this environment. The machinery is complete, invariant-checked (103 checks:
-fully reproducible from the repo via
+**v0.7.0 — the real source is connected.** The poller slot landed as the
+**OKX venue-book lane** (sealed record:
+[`docs/w0-venue-source-connection.md`](docs/w0-venue-source-connection.md)):
+BTC-USDT spot + BTC-USDT-PERP perp, both sides, 10,000 USDT notional per
+record, depth VWAP fills, the venue's published taker fees with provenance in
+every record's raw, deterministic retry-safe ids, and honest
+rejected/no_response surfaces. Venue selection was evidence-first (needing
+sandbox AND GitHub-runner reachability — Bybit/Binance geo-block the
+runner plane; Hyperliquid's only BTC spot is wrapped UBTC, a different W1
+family; Kraken's spot taker fee is 0.40%). Collection is **ingestion only,
+no trading ever**. The durable lane: GitHub Actions every 30 min (+dispatch
+bridge), single writer, in-run chain verification, artifacts pushed to the
+`rfq-data` branch (journal + status + census + descriptive report) — the
+sealed desk path `journal.jsonl` stays gitignored, untouched.
+
+Honest status as shipped: real records exist via the venue lane (count in
+`research/artifacts/rfq-status-venue.json` on `rfq-data`); a desk feed
+remains at **0 records** — no desk credentials exist in this environment.
+The machinery is complete, invariant-checked (**116 checks**: fully
+reproducible from the repo via
 `research/exploration/verify_w0_invariants.py`: chain tamper/reorder/insert/
 truncate detection, duplicate-id rejection (journal + within-batch), future
 reference rejection, determinism, source wall, edge accounting, field-map
@@ -187,14 +217,15 @@ honesty, 500 surface, zero pollution of the real artifact,
 the W1-INFRA replay adapter — source wall, provenance mapping, tenor
 convention, refused funding/settlement surfaces, read-only replay — the
 W1-INFRA coverage census — eligibility breakdown, day/tenor coverage,
-unclassified buckets, CLI e2e — and the first-feed rehearsal: the full
-runbook executed end-to-end on stand-in data, zero repo writes) — and the same
-two steps now run as **CI on GitHub on every push/PR to main**
-(`.github/workflows/ci.yml`: whole-tree byte-compilation, then the 103-check
-harness — zero dependencies, no install step, fresh-checkout-safe) — and
-exercised end-to-end on all three adapters; real data starts flowing the
-moment a feed is connected (W0→W1). The operational sequence for that day is
-[`docs/runbook-first-feed.md`](docs/runbook-first-feed.md).
+unclassified buckets, CLI e2e — the first-feed rehearsal — and the v0.7.0
+venue source: VWAP math hand-computed, ctVal contract multiplier, insufficient
+depth → rejected, fetch failure → no_response with honest prior reference,
+cold-failure discipline, R-1 retry safety, the W1 family census on real-shaped
+records, zero pollution) — the same two steps run as **CI on GitHub on every
+push/PR to main** (`.github/workflows/ci.yml`: whole-tree byte-compilation,
+then the 116-check harness). The operational sequence for a desk-feed day is
+[`docs/runbook-first-feed.md`](docs/runbook-first-feed.md); the venue lane's
+own sequence is its workflow + §7 of the runbook.
 
 ## W1-INFRA (v0.6.2) — the RFQ journal replay adapter
 
@@ -520,4 +551,4 @@ passes on ≥30 days of real journaled quotes.
 | [funding-arb](https://github.com/markec12345678/funding-arb) | the measured system — **locked** @ `0373f5d` (Phase-2 A/B/C paper validation) |
 | [phase3-lab](https://github.com/markec12345678/phase3-lab) | execution-safety laboratory (certified, port blocked by Phase-2 verdict) |
 | [funding-arb-tower](https://github.com/markec12345678/funding-arb-tower) | read-only command center + the research plan/decision records |
-| **quant-arb-engine** (this repo) | next-generation research engine — paper only · CI on every push (whole-tree byte-compile + the 103-check invariant harness) |
+| **quant-arb-engine** (this repo) | next-generation research engine — paper only · CI on every push (whole-tree byte-compile + the 116-check invariant harness) · W0 real venue lane: OKX public books → rfq-data branch (ingestion only, no trading) |

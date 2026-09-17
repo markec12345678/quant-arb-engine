@@ -34,9 +34,15 @@ STATUSES = ("quoted", "rejected", "expired", "no_response")
 INSTRUMENT_KINDS = ("spot", "perp", "forward", "cfd", "option")
 
 # Reference-price provenance tags (I-1 discipline; extensible, lowercase).
+# v0.7.0 adds "perp_book_mid" — the connected venue source quotes the perp's
+# OWN book mid as its reference (docs/w0-venue-source-connection.md §2 V-5);
+# perp_mark/perp_last would be dishonest for a book mid, other_reported
+# needlessly vague. The W1 replay adapter maps any valid-but-unknown tag to
+# REFERENCE_OTHER gracefully — no replay change needed.
 REFERENCE_SOURCES = (
-    "spot_book_mid", "spot_book_last", "perp_mark", "perp_index", "perp_last",
-    "composite_index", "desk_reference", "settlement_print", "other_reported",
+    "spot_book_mid", "spot_book_last", "perp_book_mid", "perp_mark",
+    "perp_index", "perp_last", "composite_index", "desk_reference",
+    "settlement_print", "other_reported",
 )
 
 EPISTEMIC_NOTE = (
