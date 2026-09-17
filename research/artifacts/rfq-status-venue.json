@@ -1,0 +1,50 @@
+{
+  "artifact": "rfq-status",
+  "census": {
+    "instruments": [
+      "BTC-USDT",
+      "BTC-USDT-PERP"
+    ],
+    "last_quote_ts": 1789661143202,
+    "venues": [
+      "okx"
+    ]
+  },
+  "integrity": {
+    "head_hash": "ee68683dda1570d6831a45633e32bafb323bb89d6845f516ac7aa69a6dc656b4",
+    "lines": 4,
+    "ok": true,
+    "sources": {
+      "real": 4
+    }
+  },
+  "journal_path": "research/artifacts/rfq/journal-venue.jsonl",
+  "note": "Raw RFQ journal (immutable, hash-chained). Synthetic records are test-only and never research-eligible. Descriptive accounting only \u2014 no research conclusions until a W1 decision record is sealed.",
+  "tail": [
+    {
+      "rfq_id": "okx:BTC-USDT:buy:1789661142902",
+      "seq": 1,
+      "source": "real",
+      "ts": 1789661142902
+    },
+    {
+      "rfq_id": "okx:BTC-USDT:sell:1789661142902",
+      "seq": 2,
+      "source": "real",
+      "ts": 1789661142902
+    },
+    {
+      "rfq_id": "okx:BTC-USDT-PERP:buy:1789661143202",
+      "seq": 3,
+      "source": "real",
+      "ts": 1789661143202
+    },
+    {
+      "rfq_id": "okx:BTC-USDT-PERP:sell:1789661143202",
+      "seq": 4,
+      "source": "real",
+      "ts": 1789661143202
+    }
+  ],
+  "w0_version": 1
+}
