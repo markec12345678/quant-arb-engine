@@ -1,0 +1,56 @@
+name: venue-reach-probe
+
+# W0 venue-source connection RECON (pre-design evidence, 2026-09-17):
+# which public market-data endpoints can the GitHub runner plane actually
+# reach? The sandbox probes proved all candidates reachable from the sandbox
+# egress; GitHub hosted runners exit from US IPs where some venues geo-block
+# (Binance api.binance.com is the known 451 case). The durable W0 collection
+# lane runs on THIS plane, so the venue choice is sealed only after this
+# probe answers reachability (evidence cited in
+# docs/w0-venue-source-connection.md).
+#
+# Permanently useful ops tooling after that: re-dispatch any time the
+# collector lane misbehaves to distinguish "venue down" from "runner plane
+# blocked". Read-only, no secrets, no repo writes.
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    # External/manual trigger bridge: POST /repos/{repo}/dispatches
+    # {"event_type":"venue-reach-probe"} — mirrors the paper-collector
+    # bridge pattern (funding-arb).
+    types: [venue-reach-probe]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe candidate venue endpoints
+        run: |
+          set -uo pipefail
+          probe() {
+            local label="$1"; shift
+            local code
+            code=$(curl -s -m 12 -o /tmp/body -w "%{http_code}" "$@" 2>/dev/null || echo ERR)
+            echo "PROBE [${code}] ${label}"
+            head -c 140 /tmp/body 2>/dev/null || true
+            echo
+          }
+          probe kraken-spot      "https://api.kraken.com/0/public/Depth?pair=XBTUSD&count=25"
+          probe kraken-futures   "https://futures.kraken.com/derivatives/api/v3/orderbook?symbol=PF_XBTUSD"
+          probe okx-spot         "https://www.okx.com/api/v5/market/books?instId=BTC-USDT&sz=25"
+          probe okx-perp         "https://www.okx.com/api/v5/market/books?instId=BTC-USDT-SWAP&sz=25"
+          probe bybit-spot       "https://api.bybit.com/v5/market/orderbook?category=spot&symbol=BTCUSDT&limit=25"
+          probe bybit-perp       "https://api.bybit.com/v5/market/orderbook?category=linear&symbol=BTCUSDT&limit=25"
+          probe hyperliquid-perp -X POST -H "Content-Type: application/json" -d '{"type":"l2Book","coin":"BTC"}' https://api.hyperliquid.xyz/info
+          probe hyperliquid-spot -X POST -H "Content-Type: application/json" -d '{"type":"l2Book","coin":"@142"}' https://api.hyperliquid.xyz/info
+          probe deribit-spot     "https://www.deribit.com/api/v2/public/get_order_book?instrument_name=BTC_USD&depth=20"
+          probe deribit-perp     "https://www.deribit.com/api/v2/public/get_order_book?instrument_name=BTC-PERPETUAL&depth=20"
+          probe binance-spot     "https://api.binance.com/api/v3/depth?symbol=BTCUSDT&limit=20"
+          probe binance-perp     "https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=20"
+          probe coinbase-spot    "https://api.exchange.coinbase.com/products/BTC-USD/book?level=2"
+          echo "PROBE COMPLETE"
