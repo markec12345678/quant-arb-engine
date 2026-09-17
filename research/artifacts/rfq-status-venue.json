@@ -5,51 +5,51 @@
       "BTC-USDT",
       "BTC-USDT-PERP"
     ],
-    "last_quote_ts": 1789661533959,
+    "last_quote_ts": 1789674131851,
     "venues": [
       "okx"
     ]
   },
   "integrity": {
-    "head_hash": "a7e7ddf2059384729ffc3316c0ee0a622dd147487b49923bcb28fc8c917d7500",
-    "lines": 8,
+    "head_hash": "74dcff80cb85deb3aeb18fb73baf0838f1593d4870614beccc76f9b9fe3345f4",
+    "lines": 12,
     "ok": true,
     "sources": {
-      "real": 8
+      "real": 12
     }
   },
   "journal_path": "research/artifacts/rfq/journal-venue.jsonl",
   "note": "Raw RFQ journal (immutable, hash-chained). Synthetic records are test-only and never research-eligible. Descriptive accounting only \u2014 no research conclusions until a W1 decision record is sealed.",
   "tail": [
     {
-      "rfq_id": "okx:BTC-USDT-PERP:sell:1789661143202",
-      "seq": 4,
-      "source": "real",
-      "ts": 1789661143202
-    },
-    {
-      "rfq_id": "okx:BTC-USDT:buy:1789661533509",
-      "seq": 5,
-      "source": "real",
-      "ts": 1789661533509
-    },
-    {
-      "rfq_id": "okx:BTC-USDT:sell:1789661533509",
-      "seq": 6,
-      "source": "real",
-      "ts": 1789661533509
-    },
-    {
-      "rfq_id": "okx:BTC-USDT-PERP:buy:1789661533959",
-      "seq": 7,
-      "source": "real",
-      "ts": 1789661533959
-    },
-    {
       "rfq_id": "okx:BTC-USDT-PERP:sell:1789661533959",
       "seq": 8,
       "source": "real",
       "ts": 1789661533959
+    },
+    {
+      "rfq_id": "okx:BTC-USDT:buy:1789674131401",
+      "seq": 9,
+      "source": "real",
+      "ts": 1789674131401
+    },
+    {
+      "rfq_id": "okx:BTC-USDT:sell:1789674131401",
+      "seq": 10,
+      "source": "real",
+      "ts": 1789674131401
+    },
+    {
+      "rfq_id": "okx:BTC-USDT-PERP:buy:1789674131851",
+      "seq": 11,
+      "source": "real",
+      "ts": 1789674131851
+    },
+    {
+      "rfq_id": "okx:BTC-USDT-PERP:sell:1789674131851",
+      "seq": 12,
+      "source": "real",
+      "ts": 1789674131851
     }
   ],
   "w0_version": 1

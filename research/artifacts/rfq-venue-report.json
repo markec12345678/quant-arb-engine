@@ -1,21 +1,21 @@
 {
   "counts": {
     "by_source": {
-      "real": 8,
+      "real": 12,
       "synthetic": 0
     },
     "by_status": {
-      "quoted": 8
+      "quoted": 12
     },
-    "total": 8
+    "total": 12
   },
   "data_quality": {
     "latency_ms_quantiles": {
       "p05": 153.678,
-      "p25": 162.6187,
-      "p50": 189.2545,
-      "p75": 221.4673,
-      "p95": 247.139
+      "p25": 165.599,
+      "p50": 226.357,
+      "p75": 247.139,
+      "p95": 270.042
     },
     "reference_age_ms_quantiles": {
       "p05": 0.0,
@@ -28,26 +28,26 @@
   "edges": {
     "pooled": null,
     "real": {
-      "mean_all_in_edge_bps": -7.5882,
+      "mean_all_in_edge_bps": -7.561,
       "mean_by_instrument_bps": {
-        "BTC-USDT": -10.17,
+        "BTC-USDT": -10.1155,
         "BTC-USDT-PERP": -5.0065
       },
       "mean_by_venue_bps": {
-        "okx": -7.5882
+        "okx": -7.561
       },
-      "n_firm": 8,
+      "n_firm": 12,
       "n_indicative": 0,
       "n_positive_all_in_edge": 0,
-      "n_quoted": 8,
+      "n_quoted": 12,
       "quantiles_all_in_edge_bps": {
-        "p05": -10.4315,
+        "p05": -10.3007,
         "p25": -10.0065,
         "p50": -7.5065,
         "p75": -5.0065,
         "p95": -5.0065
       },
-      "records": 8
+      "records": 12
     },
     "synthetic": {
       "mean_all_in_edge_bps": null,
@@ -64,9 +64,9 @@
   "epistemic_note": "Descriptive accounting over journaled RFQ records only \u2014 no research conclusions, no GO/NO-GO, until a W1 decision record is sealed on real data.",
   "journal": {
     "first_ts": 1789661142902,
-    "head_hash": "a7e7ddf2059384729ffc3316c0ee0a622dd147487b49923bcb28fc8c917d7500",
-    "last_ts": 1789661533959,
-    "lines": 8,
+    "head_hash": "74dcff80cb85deb3aeb18fb73baf0838f1593d4870614beccc76f9b9fe3345f4",
+    "last_ts": 1789674131851,
+    "lines": 12,
     "path": "research/artifacts/rfq/journal-venue.jsonl",
     "truncation_check": "passed (live head == recorded head)"
   }
