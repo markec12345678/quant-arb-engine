@@ -2,18 +2,18 @@
   "kind": "rfq-journal-coverage",
   "journal": "research/artifacts/rfq/journal-venue.jsonl",
   "chain": {
-    "lines": 28,
-    "head_hash": "8bc56b9900def80069d6de6c5b79ce81f11502921e475b8acaeea5a3bc0248e2"
+    "lines": 32,
+    "head_hash": "e94805948835a410f6882c21ff8b9d63ea918d1219ce0f121b31f5b8392228f8"
   },
   "sources": {
-    "real": 28
+    "real": 32
   },
   "synthetic_mode": false,
   "families": [
     {
       "symbol": "BTC-USDT",
-      "total_records": 28,
-      "eligible": 28,
+      "total_records": 32,
+      "eligible": 32,
       "ineligible": {
         "by_status": {},
         "indicative": 0
