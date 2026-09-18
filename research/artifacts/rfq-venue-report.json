@@ -1,21 +1,21 @@
 {
   "counts": {
     "by_source": {
-      "real": 36,
+      "real": 40,
       "synthetic": 0
     },
     "by_status": {
-      "quoted": 36
+      "quoted": 40
     },
-    "total": 36
+    "total": 40
   },
   "data_quality": {
     "latency_ms_quantiles": {
-      "p05": 162.6187,
-      "p25": 210.802,
-      "p50": 230.1775,
-      "p75": 239.804,
-      "p95": 258.9855
+      "p05": 165.0029,
+      "p25": 210.5682,
+      "p50": 228.9065,
+      "p75": 237.3957,
+      "p95": 256.0371
     },
     "reference_age_ms_quantiles": {
       "p05": 0.0,
@@ -28,26 +28,26 @@
   "edges": {
     "pooled": null,
     "real": {
-      "mean_all_in_edge_bps": -7.5621,
+      "mean_all_in_edge_bps": -7.5733,
       "mean_by_instrument_bps": {
-        "BTC-USDT": -10.1177,
+        "BTC-USDT": -10.1401,
         "BTC-USDT-PERP": -5.0064
       },
       "mean_by_venue_bps": {
-        "okx": -7.5621
+        "okx": -7.5733
       },
-      "n_firm": 36,
+      "n_firm": 40,
       "n_indicative": 0,
       "n_positive_all_in_edge": 0,
-      "n_quoted": 36,
+      "n_quoted": 40,
       "quantiles_all_in_edge_bps": {
-        "p05": -10.3878,
+        "p05": -10.6611,
         "p25": -10.0065,
         "p50": -7.5064,
         "p75": -5.0065,
         "p95": -5.0062
       },
-      "records": 36
+      "records": 40
     },
     "synthetic": {
       "mean_all_in_edge_bps": null,
@@ -64,9 +64,9 @@
   "epistemic_note": "Descriptive accounting over journaled RFQ records only \u2014 no research conclusions, no GO/NO-GO, until a W1 decision record is sealed on real data.",
   "journal": {
     "first_ts": 1789661142902,
-    "head_hash": "f91cb1d83ea15e719e06a5b85446df3e3a0e892966de0688edee3be58a318703",
-    "last_ts": 1789758569304,
-    "lines": 36,
+    "head_hash": "c1b113ef76c5cfca4e60a156fd87730ec8e587a761534ac9242de17acd85ec99",
+    "last_ts": 1789768153755,
+    "lines": 40,
     "path": "research/artifacts/rfq/journal-venue.jsonl",
     "truncation_check": "passed (live head == recorded head)"
   }
