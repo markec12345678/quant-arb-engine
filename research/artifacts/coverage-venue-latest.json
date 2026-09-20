@@ -2,18 +2,18 @@
   "kind": "rfq-journal-coverage",
   "journal": "research/artifacts/rfq/journal-venue.jsonl",
   "chain": {
-    "lines": 68,
-    "head_hash": "2baa5987984c692a6d3c2e6e46dead67949d19dacceaf95f722e28dd38b339b8"
+    "lines": 72,
+    "head_hash": "69044ed9dcbf3d4ba04eb6b1bf76f45745fa66c9645a69c5dd9a450678f37caf"
   },
   "sources": {
-    "real": 68
+    "real": 72
   },
   "synthetic_mode": false,
   "families": [
     {
       "symbol": "BTC-USDT",
-      "total_records": 68,
-      "eligible": 67,
+      "total_records": 72,
+      "eligible": 71,
       "ineligible": {
         "by_status": {
           "rejected": 1
@@ -21,14 +21,14 @@
         "indicative": 0
       },
       "unusable": [],
-      "quote_days": 3,
+      "quote_days": 4,
       "first_day": "2026-09-17",
-      "last_day": "2026-09-19",
-      "spot_days": 3,
-      "spot_full_pair_days": 3,
+      "last_day": "2026-09-20",
+      "spot_days": 4,
+      "spot_full_pair_days": 4,
       "partial_spot_days": [],
       "tenors": {},
-      "perp_days": 3,
+      "perp_days": 4,
       "venues": [
         "okx"
       ]
