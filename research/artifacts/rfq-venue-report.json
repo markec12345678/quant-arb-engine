@@ -1,22 +1,22 @@
 {
   "counts": {
     "by_source": {
-      "real": 76,
+      "real": 80,
       "synthetic": 0
     },
     "by_status": {
-      "quoted": 75,
+      "quoted": 79,
       "rejected": 1
     },
-    "total": 76
+    "total": 80
   },
   "data_quality": {
     "latency_ms_quantiles": {
-      "p05": 175.649,
-      "p25": 209.867,
+      "p05": 178.329,
+      "p25": 210.5682,
       "p50": 227.1065,
-      "p75": 233.707,
-      "p95": 255.5428
+      "p75": 233.7747,
+      "p95": 255.3486
     },
     "reference_age_ms_quantiles": {
       "p05": 0.0,
@@ -29,26 +29,26 @@
   "edges": {
     "pooled": null,
     "real": {
-      "mean_all_in_edge_bps": -7.6001,
+      "mean_all_in_edge_bps": -7.5953,
       "mean_by_instrument_bps": {
-        "BTC-USDT": -10.1256,
+        "BTC-USDT": -10.1196,
         "BTC-USDT-PERP": -5.0063
       },
       "mean_by_venue_bps": {
-        "okx": -7.6001
+        "okx": -7.5953
       },
-      "n_firm": 75,
+      "n_firm": 79,
       "n_indicative": 0,
       "n_positive_all_in_edge": 0,
-      "n_quoted": 75,
+      "n_quoted": 79,
       "quantiles_all_in_edge_bps": {
-        "p05": -10.529,
+        "p05": -10.5197,
         "p25": -10.0065,
         "p50": -10.0061,
         "p75": -5.0062,
         "p95": -5.0061
       },
-      "records": 76
+      "records": 80
     },
     "synthetic": {
       "mean_all_in_edge_bps": null,
@@ -65,9 +65,9 @@
   "epistemic_note": "Descriptive accounting over journaled RFQ records only \u2014 no research conclusions, no GO/NO-GO, until a W1 decision record is sealed on real data.",
   "journal": {
     "first_ts": 1789661142902,
-    "head_hash": "a47ba411a5a4b3caa5b1fb870a4b04eb3722ffd39dae8c76d9db6b81d61a959a",
-    "last_ts": 1789879718104,
-    "lines": 76,
+    "head_hash": "7438a1e0da88b234005e12f20f01c516ecab42aee02ff54f44cddd996ec424c8",
+    "last_ts": 1789897441454,
+    "lines": 80,
     "path": "research/artifacts/rfq/journal-venue.jsonl",
     "truncation_check": "passed (live head == recorded head)"
   }
