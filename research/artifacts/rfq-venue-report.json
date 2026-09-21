@@ -1,22 +1,22 @@
 {
   "counts": {
     "by_source": {
-      "real": 104,
+      "real": 108,
       "synthetic": 0
     },
     "by_status": {
-      "quoted": 103,
+      "quoted": 107,
       "rejected": 1
     },
-    "total": 104
+    "total": 108
   },
   "data_quality": {
     "latency_ms_quantiles": {
-      "p05": 160.9155,
-      "p25": 205.1093,
-      "p50": 225.292,
-      "p75": 233.617,
-      "p95": 256.2448
+      "p05": 158.0512,
+      "p25": 204.907,
+      "p50": 224.343,
+      "p75": 233.587,
+      "p95": 256.2097
     },
     "reference_age_ms_quantiles": {
       "p05": 0.0,
@@ -29,26 +29,26 @@
   "edges": {
     "pooled": null,
     "real": {
-      "mean_all_in_edge_bps": -7.5845,
+      "mean_all_in_edge_bps": -7.5816,
       "mean_by_instrument_bps": {
-        "BTC-USDT": -10.1131,
-        "BTC-USDT-PERP": -5.0063
+        "BTC-USDT": -10.1093,
+        "BTC-USDT-PERP": -5.0062
       },
       "mean_by_venue_bps": {
-        "okx": -7.5845
+        "okx": -7.5816
       },
-      "n_firm": 103,
+      "n_firm": 107,
       "n_indicative": 0,
       "n_positive_all_in_edge": 0,
-      "n_quoted": 103,
+      "n_quoted": 107,
       "quantiles_all_in_edge_bps": {
-        "p05": -10.5098,
+        "p05": -10.4992,
         "p25": -10.0063,
-        "p50": -10.0061,
+        "p50": -10.0058,
         "p75": -5.0062,
         "p95": -5.0061
       },
-      "records": 104
+      "records": 108
     },
     "synthetic": {
       "mean_all_in_edge_bps": null,
@@ -65,9 +65,9 @@
   "epistemic_note": "Descriptive accounting over journaled RFQ records only \u2014 no research conclusions, no GO/NO-GO, until a W1 decision record is sealed on real data.",
   "journal": {
     "first_ts": 1789661142902,
-    "head_hash": "c080b622f5fb804ac28c2bdae1375b1a8e048cf03cc946fb7ffcaddab8f6b9ea",
-    "last_ts": 1789974353053,
-    "lines": 104,
+    "head_hash": "0ec81e01fb76456517a97bd5d34eb6a07d26f6bf43c6ed63e2e543929d254ddc",
+    "last_ts": 1789999331701,
+    "lines": 108,
     "path": "research/artifacts/rfq/journal-venue.jsonl",
     "truncation_check": "passed (live head == recorded head)"
   }
