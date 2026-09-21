@@ -5,51 +5,51 @@
       "BTC-USDT",
       "BTC-USDT-PERP"
     ],
-    "last_quote_ts": 1790018375954,
+    "last_quote_ts": 1790030862709,
     "venues": [
       "okx"
     ]
   },
   "integrity": {
-    "head_hash": "fdfeefba831329a67140840809ed109f6c9530a64efa15218b3e59414576dbc7",
-    "lines": 111,
+    "head_hash": "81485b6ce2b1b2fe7ee650ab57e5ab8cffa0d0317934bef8fd8fa181e17a0367",
+    "lines": 115,
     "ok": true,
     "sources": {
-      "real": 111
+      "real": 115
     }
   },
   "journal_path": "research/artifacts/rfq/journal-venue.jsonl",
   "note": "Raw RFQ journal (immutable, hash-chained). Synthetic records are test-only and never research-eligible. Descriptive accounting only \u2014 no research conclusions until a W1 decision record is sealed.",
   "tail": [
     {
-      "rfq_id": "okx:BTC-USDT-PERP:buy:1789999331701",
-      "seq": 107,
-      "source": "real",
-      "ts": 1789999331701
-    },
-    {
-      "rfq_id": "okx:BTC-USDT-PERP:sell:1789999331701",
-      "seq": 108,
-      "source": "real",
-      "ts": 1789999331701
-    },
-    {
-      "rfq_id": "okx:BTC-USDT:poll:1790018375586:no_response",
-      "seq": 109,
-      "source": "real",
-      "ts": 1790018375586
-    },
-    {
-      "rfq_id": "okx:BTC-USDT-PERP:buy:1790018375954",
-      "seq": 110,
-      "source": "real",
-      "ts": 1790018375954
-    },
-    {
       "rfq_id": "okx:BTC-USDT-PERP:sell:1790018375954",
       "seq": 111,
       "source": "real",
       "ts": 1790018375954
+    },
+    {
+      "rfq_id": "okx:BTC-USDT:buy:1790030862359",
+      "seq": 112,
+      "source": "real",
+      "ts": 1790030862359
+    },
+    {
+      "rfq_id": "okx:BTC-USDT:sell:1790030862359",
+      "seq": 113,
+      "source": "real",
+      "ts": 1790030862359
+    },
+    {
+      "rfq_id": "okx:BTC-USDT-PERP:buy:1790030862709",
+      "seq": 114,
+      "source": "real",
+      "ts": 1790030862709
+    },
+    {
+      "rfq_id": "okx:BTC-USDT-PERP:sell:1790030862709",
+      "seq": 115,
+      "source": "real",
+      "ts": 1790030862709
     }
   ],
   "w0_version": 1
