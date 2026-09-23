@@ -5,51 +5,51 @@
       "BTC-USDT",
       "BTC-USDT-PERP"
     ],
-    "last_quote_ts": 1790118866404,
+    "last_quote_ts": 1790127825802,
     "venues": [
       "okx"
     ]
   },
   "integrity": {
-    "head_hash": "60a599528c018e463c55cdb29c75b72665947a0e4c848b110f51558e67e03a05",
-    "lines": 139,
+    "head_hash": "f27f6b6af022df1e0ea92602dbfa099f0836fa56c956c47d69b2f65d271b4fd2",
+    "lines": 143,
     "ok": true,
     "sources": {
-      "real": 139
+      "real": 143
     }
   },
   "journal_path": "research/artifacts/rfq/journal-venue.jsonl",
   "note": "Raw RFQ journal (immutable, hash-chained). Synthetic records are test-only and never research-eligible. Descriptive accounting only \u2014 no research conclusions until a W1 decision record is sealed.",
   "tail": [
     {
-      "rfq_id": "okx:BTC-USDT-PERP:sell:1790108839951",
-      "seq": 135,
-      "source": "real",
-      "ts": 1790108839951
-    },
-    {
-      "rfq_id": "okx:BTC-USDT:buy:1790118866004",
-      "seq": 136,
-      "source": "real",
-      "ts": 1790118866004
-    },
-    {
-      "rfq_id": "okx:BTC-USDT:sell:1790118866004",
-      "seq": 137,
-      "source": "real",
-      "ts": 1790118866004
-    },
-    {
-      "rfq_id": "okx:BTC-USDT-PERP:buy:1790118866404",
-      "seq": 138,
-      "source": "real",
-      "ts": 1790118866404
-    },
-    {
       "rfq_id": "okx:BTC-USDT-PERP:sell:1790118866404",
       "seq": 139,
       "source": "real",
       "ts": 1790118866404
+    },
+    {
+      "rfq_id": "okx:BTC-USDT:buy:1790127825352",
+      "seq": 140,
+      "source": "real",
+      "ts": 1790127825352
+    },
+    {
+      "rfq_id": "okx:BTC-USDT:sell:1790127825352",
+      "seq": 141,
+      "source": "real",
+      "ts": 1790127825352
+    },
+    {
+      "rfq_id": "okx:BTC-USDT-PERP:buy:1790127825802",
+      "seq": 142,
+      "source": "real",
+      "ts": 1790127825802
+    },
+    {
+      "rfq_id": "okx:BTC-USDT-PERP:sell:1790127825802",
+      "seq": 143,
+      "source": "real",
+      "ts": 1790127825802
     }
   ],
   "w0_version": 1
