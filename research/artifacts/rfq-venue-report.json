@@ -1,23 +1,23 @@
 {
   "counts": {
     "by_source": {
-      "real": 203,
+      "real": 207,
       "synthetic": 0
     },
     "by_status": {
       "no_response": 1,
-      "quoted": 200,
+      "quoted": 204,
       "rejected": 2
     },
-    "total": 203
+    "total": 207
   },
   "data_quality": {
     "latency_ms_quantiles": {
       "p05": 151.514,
-      "p25": 199.385,
-      "p50": 225.682,
-      "p75": 237.528,
-      "p95": 269.4035
+      "p25": 200.085,
+      "p50": 225.297,
+      "p75": 237.119,
+      "p95": 268.1265
     },
     "reference_age_ms_quantiles": {
       "p05": 0.0,
@@ -30,26 +30,26 @@
   "edges": {
     "pooled": null,
     "real": {
-      "mean_all_in_edge_bps": -7.5483,
+      "mean_all_in_edge_bps": -7.5475,
       "mean_by_instrument_bps": {
-        "BTC-USDT": -10.0852,
-        "BTC-USDT-PERP": -5.0115
+        "BTC-USDT": -10.0836,
+        "BTC-USDT-PERP": -5.0113
       },
       "mean_by_venue_bps": {
-        "okx": -7.5483
+        "okx": -7.5475
       },
-      "n_firm": 200,
+      "n_firm": 204,
       "n_indicative": 0,
       "n_positive_all_in_edge": 0,
-      "n_quoted": 200,
+      "n_quoted": 204,
       "quantiles_all_in_edge_bps": {
-        "p05": -10.3019,
+        "p05": -10.3004,
         "p25": -10.0062,
         "p50": -7.7751,
         "p75": -5.0061,
         "p95": -5.0058
       },
-      "records": 203
+      "records": 207
     },
     "synthetic": {
       "mean_all_in_edge_bps": null,
@@ -66,9 +66,9 @@
   "epistemic_note": "Descriptive accounting over journaled RFQ records only \u2014 no research conclusions, no GO/NO-GO, until a W1 decision record is sealed on real data.",
   "journal": {
     "first_ts": 1789661142902,
-    "head_hash": "6b13e6de123e1d8ebf4098b4502d61310916c8ef4108e82440bd16d8a6a5d53c",
-    "last_ts": 1790367950750,
-    "lines": 203,
+    "head_hash": "503c84d4266a35dcd9651adeb52d086a0f142ea3ada9f4f2c22a3d831752cde1",
+    "last_ts": 1790378969802,
+    "lines": 207,
     "path": "research/artifacts/rfq/journal-venue.jsonl",
     "truncation_check": "passed (live head == recorded head)"
   }
