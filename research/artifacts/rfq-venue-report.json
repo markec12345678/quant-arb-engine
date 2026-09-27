@@ -1,22 +1,22 @@
 {
   "counts": {
     "by_source": {
-      "real": 235,
+      "real": 239,
       "synthetic": 0
     },
     "by_status": {
       "no_response": 1,
-      "quoted": 232,
+      "quoted": 236,
       "rejected": 2
     },
-    "total": 235
+    "total": 239
   },
   "data_quality": {
     "latency_ms_quantiles": {
-      "p05": 151.2755,
-      "p25": 189.491,
-      "p50": 224.063,
-      "p75": 236.856,
+      "p05": 151.4345,
+      "p25": 193.602,
+      "p50": 224.3,
+      "p75": 236.593,
       "p95": 270.042
     },
     "reference_age_ms_quantiles": {
@@ -30,26 +30,26 @@
   "edges": {
     "pooled": null,
     "real": {
-      "mean_all_in_edge_bps": -7.5433,
+      "mean_all_in_edge_bps": -7.5439,
       "mean_by_instrument_bps": {
-        "BTC-USDT": -10.0759,
-        "BTC-USDT-PERP": -5.0107
+        "BTC-USDT": -10.0773,
+        "BTC-USDT-PERP": -5.0106
       },
       "mean_by_venue_bps": {
-        "okx": -7.5433
+        "okx": -7.5439
       },
-      "n_firm": 232,
+      "n_firm": 236,
       "n_indicative": 0,
       "n_positive_all_in_edge": 0,
-      "n_quoted": 232,
+      "n_quoted": 236,
       "quantiles_all_in_edge_bps": {
-        "p05": -10.2918,
+        "p05": -10.298,
         "p25": -10.0061,
         "p50": -7.7751,
         "p75": -5.006,
         "p95": -5.0058
       },
-      "records": 235
+      "records": 239
     },
     "synthetic": {
       "mean_all_in_edge_bps": null,
@@ -66,9 +66,9 @@
   "epistemic_note": "Descriptive accounting over journaled RFQ records only \u2014 no research conclusions, no GO/NO-GO, until a W1 decision record is sealed on real data.",
   "journal": {
     "first_ts": 1789661142902,
-    "head_hash": "7c75f15f7d4e045ee926ae85bee8491f30af584192dcf1642f9a8282e44dd16e",
-    "last_ts": 1790472049757,
-    "lines": 235,
+    "head_hash": "8e39f1f79556ce972499baf43d38f1bf7badbff16a491f4d451ed4847a1a9f25",
+    "last_ts": 1790492587107,
+    "lines": 239,
     "path": "research/artifacts/rfq/journal-venue.jsonl",
     "truncation_check": "passed (live head == recorded head)"
   }

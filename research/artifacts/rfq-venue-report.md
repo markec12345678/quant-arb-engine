@@ -1,20 +1,20 @@
 # W0 — raw RFQ journal replay (descriptive accounting)
 
-* journal: `research/artifacts/rfq/journal-venue.jsonl` · 235 lines · head `7c75f15f7d4e045e…`
+* journal: `research/artifacts/rfq/journal-venue.jsonl` · 239 lines · head `8e39f1f79556ce97…`
 * truncation check: passed (live head == recorded head)
-* counts: total 235 · by source {'real': 235, 'synthetic': 0} · by status {'no_response': 1, 'quoted': 232, 'rejected': 2}
+* counts: total 239 · by source {'real': 239, 'synthetic': 0} · by status {'no_response': 1, 'quoted': 236, 'rejected': 2}
 
 ## ALL-IN EDGE (bps of reference; source-split, never pooled)
 
-* **real**: 235 records · 232 quoted (232 firm / 0 indicative) · mean -7.5433 bps · p50 -7.7751 · p05 -10.2918 · p95 -5.0058 · n>0 0
-    - BTC-USDT: mean -10.0759 bps
-    - BTC-USDT-PERP: mean -5.0107 bps
+* **real**: 239 records · 236 quoted (236 firm / 0 indicative) · mean -7.5439 bps · p50 -7.7751 · p05 -10.298 · p95 -5.0058 · n>0 0
+    - BTC-USDT: mean -10.0773 bps
+    - BTC-USDT-PERP: mean -5.0106 bps
 * **synthetic**: 0 records
 
 ## Data quality
 
 * reference age (ms): {'p05': 0.0, 'p25': 0.0, 'p50': 0.0, 'p75': 0.0, 'p95': 0.0}
-* latency (ms): {'p05': 151.2755, 'p25': 189.491, 'p50': 224.063, 'p75': 236.856, 'p95': 270.042}
+* latency (ms): {'p05': 151.4345, 'p25': 193.602, 'p50': 224.3, 'p75': 236.593, 'p95': 270.042}
 
 > Descriptive accounting over journaled RFQ records only — no research conclusions, no GO/NO-GO, until a W1 decision record is sealed on real data.
 
