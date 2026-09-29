@@ -1,22 +1,22 @@
 {
   "counts": {
     "by_source": {
-      "real": 275,
+      "real": 279,
       "synthetic": 0
     },
     "by_status": {
       "no_response": 1,
-      "quoted": 272,
+      "quoted": 276,
       "rejected": 2
     },
-    "total": 275
+    "total": 279
   },
   "data_quality": {
     "latency_ms_quantiles": {
-      "p05": 151.2755,
-      "p25": 183.498,
+      "p05": 151.4345,
+      "p25": 185.311,
       "p50": 220.683,
-      "p75": 236.2455,
+      "p75": 236.593,
       "p95": 270.042
     },
     "reference_age_ms_quantiles": {
@@ -30,26 +30,26 @@
   "edges": {
     "pooled": null,
     "real": {
-      "mean_all_in_edge_bps": -7.5467,
+      "mean_all_in_edge_bps": -7.5474,
       "mean_by_instrument_bps": {
-        "BTC-USDT": -10.0818,
-        "BTC-USDT-PERP": -5.0117
+        "BTC-USDT": -10.0832,
+        "BTC-USDT-PERP": -5.0116
       },
       "mean_by_venue_bps": {
-        "okx": -7.5467
+        "okx": -7.5474
       },
-      "n_firm": 272,
+      "n_firm": 276,
       "n_indicative": 0,
       "n_positive_all_in_edge": 0,
-      "n_quoted": 272,
+      "n_quoted": 276,
       "quantiles_all_in_edge_bps": {
-        "p05": -10.2988,
+        "p05": -10.3012,
         "p25": -10.0061,
         "p50": -7.7751,
         "p75": -5.006,
         "p95": -5.0058
       },
-      "records": 275
+      "records": 279
     },
     "synthetic": {
       "mean_all_in_edge_bps": null,
@@ -66,9 +66,9 @@
   "epistemic_note": "Descriptive accounting over journaled RFQ records only \u2014 no research conclusions, no GO/NO-GO, until a W1 decision record is sealed on real data.",
   "journal": {
     "first_ts": 1789661142902,
-    "head_hash": "5650855d2fbe630c6b9699aa9f2077ea788a5145b40a4ba1a3dc70d5201c9a96",
-    "last_ts": 1790660165450,
-    "lines": 275,
+    "head_hash": "5e8594d80d0e3cf58895a617119a655470f63b42b34074f1a50d9e03f779e10c",
+    "last_ts": 1790681602454,
+    "lines": 279,
     "path": "research/artifacts/rfq/journal-venue.jsonl",
     "truncation_check": "passed (live head == recorded head)"
   }
