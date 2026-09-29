@@ -1,23 +1,23 @@
 {
   "counts": {
     "by_source": {
-      "real": 283,
+      "real": 287,
       "synthetic": 0
     },
     "by_status": {
       "no_response": 1,
-      "quoted": 280,
+      "quoted": 284,
       "rejected": 2
     },
-    "total": 283
+    "total": 287
   },
   "data_quality": {
     "latency_ms_quantiles": {
       "p05": 151.514,
-      "p25": 187.124,
+      "p25": 188.3075,
       "p50": 220.46,
-      "p75": 236.2455,
-      "p95": 269.5701
+      "p75": 235.898,
+      "p95": 268.6263
     },
     "reference_age_ms_quantiles": {
       "p05": 0.0,
@@ -30,26 +30,26 @@
   "edges": {
     "pooled": null,
     "real": {
-      "mean_all_in_edge_bps": -7.5472,
+      "mean_all_in_edge_bps": -7.5466,
       "mean_by_instrument_bps": {
-        "BTC-USDT": -10.0828,
-        "BTC-USDT-PERP": -5.0116
+        "BTC-USDT": -10.0817,
+        "BTC-USDT-PERP": -5.0115
       },
       "mean_by_venue_bps": {
-        "okx": -7.5472
+        "okx": -7.5466
       },
-      "n_firm": 280,
+      "n_firm": 284,
       "n_indicative": 0,
       "n_positive_all_in_edge": 0,
-      "n_quoted": 280,
+      "n_quoted": 284,
       "quantiles_all_in_edge_bps": {
-        "p05": -10.301,
+        "p05": -10.3004,
         "p25": -10.0061,
         "p50": -7.7751,
         "p75": -5.006,
         "p95": -5.0058
       },
-      "records": 283
+      "records": 287
     },
     "synthetic": {
       "mean_all_in_edge_bps": null,
@@ -66,9 +66,9 @@
   "epistemic_note": "Descriptive accounting over journaled RFQ records only \u2014 no research conclusions, no GO/NO-GO, until a W1 decision record is sealed on real data.",
   "journal": {
     "first_ts": 1789661142902,
-    "head_hash": "000ac84f0ac7aa5e81d4b308579e3fbc92f36c615fe3f4babf7d9d55e674ed1a",
-    "last_ts": 1790701197252,
-    "lines": 283,
+    "head_hash": "213ecd63728da53594bd466b556084c24a905975fff1a681c0e0c69374be1b71",
+    "last_ts": 1790716927307,
+    "lines": 287,
     "path": "research/artifacts/rfq/journal-venue.jsonl",
     "truncation_check": "passed (live head == recorded head)"
   }
