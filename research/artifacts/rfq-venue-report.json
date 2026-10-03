@@ -1,22 +1,22 @@
 {
   "counts": {
     "by_source": {
-      "real": 351,
+      "real": 355,
       "synthetic": 0
     },
     "by_status": {
       "no_response": 1,
-      "quoted": 347,
+      "quoted": 351,
       "rejected": 3
     },
-    "total": 351
+    "total": 355
   },
   "data_quality": {
     "latency_ms_quantiles": {
-      "p05": 141.837,
-      "p25": 185.311,
+      "p05": 142.3742,
+      "p25": 187.124,
       "p50": 216.315,
-      "p75": 233.978,
+      "p75": 234.1735,
       "p95": 265.323
     },
     "reference_age_ms_quantiles": {
@@ -30,26 +30,26 @@
   "edges": {
     "pooled": null,
     "real": {
-      "mean_all_in_edge_bps": -7.5497,
+      "mean_all_in_edge_bps": -7.5492,
       "mean_by_instrument_bps": {
-        "BTC-USDT": -10.0742,
+        "BTC-USDT": -10.0734,
         "BTC-USDT-PERP": -5.0105
       },
       "mean_by_venue_bps": {
-        "okx": -7.5497
+        "okx": -7.5492
       },
-      "n_firm": 347,
+      "n_firm": 351,
       "n_indicative": 0,
       "n_positive_all_in_edge": 0,
-      "n_quoted": 347,
+      "n_quoted": 351,
       "quantiles_all_in_edge_bps": {
-        "p05": -10.2959,
+        "p05": -10.2952,
         "p25": -10.006,
         "p50": -10.0058,
         "p75": -5.006,
         "p95": -5.0058
       },
-      "records": 351
+      "records": 355
     },
     "synthetic": {
       "mean_all_in_edge_bps": null,
@@ -66,9 +66,9 @@
   "epistemic_note": "Descriptive accounting over journaled RFQ records only \u2014 no research conclusions, no GO/NO-GO, until a W1 decision record is sealed on real data.",
   "journal": {
     "first_ts": 1789661142902,
-    "head_hash": "0b336fc50b0ec32a33976ac0b3d4cf5a791fc060fe33e581803d432261b0b15c",
-    "last_ts": 1791011004103,
-    "lines": 351,
+    "head_hash": "bca95ab382c96453d80e1ef319d97635ca9a5249e796fd29078788a70e53bfee",
+    "last_ts": 1791030484751,
+    "lines": 355,
     "path": "research/artifacts/rfq/journal-venue.jsonl",
     "truncation_check": "passed (live head == recorded head)"
   }
